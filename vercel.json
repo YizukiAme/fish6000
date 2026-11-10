@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "",
+  "buildCommand": "mkdir -p site && cp film.html site/index.html && cp score_full.wav site/score_full.wav && cp LICENSE site/LICENSE && cp -R licenses site/licenses",
+  "outputDirectory": "site"
+}
