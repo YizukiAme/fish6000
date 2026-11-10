@@ -1,0 +1,16 @@
+{
+  "name": "fish6000",
+  "private": true,
+  "description": "《一条鱼，游过六千年》—— 渲染脚本依赖",
+  "scripts": {
+    "build": "python build.py",
+    "render": "node render.js video film_silent.mp4"
+  },
+  "dependencies": {
+    "playwright-core": "^1.49.0"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,6 @@
+const WALLPAT=(()=>{const c=mk(400,400);const x=c.getContext('2d');const r=rng(3);
+  for(let i=0;i<3200;i++){x.fillStyle=r()<.5?`rgba(80,64,40,${0.02+r()*0.035})`:`rgba(255,255,250,${0.04+r()*0.05})`;x.fillRect(r()*400,r()*400,1+r()*1.4,1+r()*1.4);}
+  return ctx.createPattern(c,'repeat');})();
+const GRAINS=[0,1,2,3].map(s=>{const w=960,h=540;const c=mk(w,h);const x=c.getContext('2d');const img=x.createImageData(w,h);const r=rng(100+s);for(let i=0;i<w*h;i++){const v=128+(r()+r()+r()-1.5)*90;img.data[i*4]=v;img.data[i*4+1]=v;img.data[i*4+2]=v;img.data[i*4+3]=255;}x.putImageData(img,0,0);return c;});
+const INKGRAIN=(()=>{const c=mk(256,256);const x=c.getContext('2d');const img=x.createImageData(256,256);const r=rng(55);const n=noise2(56,32,32);for(let i=0;i<256*256;i++){const px=i%256,py=(i/256)|0;const a=clamp(n(px/8,py/8)*0.7+r()*0.6-0.35);img.data[i*4+3]=a*255;}x.putImageData(img,0,0);return ctx.createPattern(c,'repeat');})();
+const PLATEGRAIN=(()=>{const c=mk(256,256);const x=c.getContext('2d');const img=x.createImageData(256,256);const r=rng(57);for(let i=0;i<256*256;i++){const v=150+r()*105;img.data[i*4]=v;img.data[i*4+1]=v*0.98;img.data[i*4+2]=v*0.94;img.data[i*4+3]=255;}x.putImageData(img,0,0);return ctx.createPattern(c,'repeat');})();

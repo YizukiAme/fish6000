@@ -1,0 +1,9 @@
+Embedded font subsets in film/fonts.js and film.html retain their original licenses:
+
+Noto Serif CJK SC: SIL Open Font License 1.1 (NotoSerifCJK-OFL.txt)
+Source: https://github.com/notofonts/noto-cjk
+
+DejaVu Sans Mono: Bitstream Vera / DejaVu license (DejaVu-LICENSE.txt)
+Source: https://github.com/dejavu-fonts/dejavu-fonts
+
+The project MIT license does not replace these font licenses.
