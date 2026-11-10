@@ -5,7 +5,7 @@ const V3=(()=>{
 const P=600,R=255,ZW=0.8;
 const SCX=380,PCX=-380,PCY=0;
 const MS=3,MH=260*MS,MW=520*MS;
-const T_INSIDE=14.6,T_FREEZE=26.45,TP=26.2,T_WINK=44.8,T_LEAVE=45.9;
+const T_INSIDE=14.6,T_FREEZE=26.85,TP=26.2,T_WINK=44.8,T_LEAVE=45.9;
 const RAW=[64,60,58],BLUE=[20,40,124];
 
 const SILK=(()=>{const w=2560,h=1440;const c=mk(w,h);const x=c.getContext('2d');const img=x.createImageData(w,h);const d=img.data;
@@ -28,9 +28,12 @@ const SILK=(()=>{const w=2560,h=1440;const c=mk(w,h);const x=c.getContext('2d');
 const SEAL1=mkSeal({chars:['觀','魚'],cols:1,rows:2,aspect:1.7,type:'zhu',size:240,seed:5}),SEAL2=mkSeal({chars:['游','心'],cols:1,rows:2,aspect:1.8,type:'bai',size:220,seed:9,sw:0.04});
 
 // ---------------- 鱼的路线 ----------------
-let hero=null;const V3KNOTS=[[-8,1300,260],[-4,1080,200],[0,860,160],[2.5,720,110],[4.5,600,40],[6.3,510,-50],[7.6,450,-105],[8.3,421,-128],[8.75,407,-136],[9.45,404,-138],[9.95,400,-131],[10.6,382,-106],[11.4,333,-62],[12.4,262,-22],[13.6,182,8],[15.0,122,22],[16.6,82,22],[18.2,52,15],[19.4,27,10],[20.4,2,6],[21.4,-38,0],[22.4,-108,-10],[23.2,-178,-20],[23.9,-232,-22],[24.5,-270,4],[24.95,-315,18],[25.4,-360,14],[25.75,-405,-4],[26.05,-450,-12],[26.3,-482,-6],[26.45,-490,-5],[60,-490,-5]];
-const compB={tr:makeTrack([[-8,1250,290],[-4,1050,255],[0,880,236],[4,720,205],[8,600,226],[12,500,190],[16,430,214],[20,370,186],[24,320,206],[28,280,190],[32,250,205],[38,220,192],[44,200,204],[50,180,196]],-8,50),L:()=>125};
-const compC={tr:makeTrack([[-8,1300,95],[-4,1100,72],[0,950,56],[4,820,104],[8,700,76],[12,620,118],[16,560,86],[20,505,124],[24,470,96],[28,445,120],[32,425,100],[38,410,116],[44,400,104],[50,392,110]],-8,50),L:()=>108};
+let hero=null;const V3KNOTS=[[-8,1300,260],[-4,1080,200],[0,860,160],[2.5,720,110],[4.5,600,40],[6.3,510,-50],[7.6,450,-105],[8.3,421,-128],[8.75,407,-136],[9.45,404,-138],[9.95,400,-131],[10.6,382,-106],[11.4,333,-62],[12.4,262,-22],[13.6,182,8],[15.0,122,22],[16.6,82,22],[18.2,52,15],[19.4,27,10],[20.4,2,6],[21.4,-38,0],[22.4,-108,-10],[23.2,-178,-20],[23.9,-232,-22],[24.5,-270,4],[24.95,-315,18],[25.4,-360,14],[25.75,-405,-4],[26.0,-436,-10],[26.2,-458,-9],[26.4,-474,-7],[26.6,-484,-5.6],[26.85,-489,-5.1],[27.2,-490,-5],[60,-490,-5]];
+// 两条伴游的小鱼一直游到片尾（终章的鱼形展墙上，这幅画里也还有鱼在游）
+const compB={tr:makeTrack([[-8,1250,290],[-4,1050,255],[0,880,236],[4,720,205],[8,600,226],[12,500,190],[16,430,214],[20,370,186],[24,320,206],[28,280,190],[32,250,205],[38,220,192],[44,200,204],[50,180,196],
+  [56,152,172],[62,140,124],[68,162,80],[74,212,56],[80,276,60],[86,340,84],[92,398,120],[98,440,164],[104,474,204],[110,506,236],[116,540,262]],-8,116),L:()=>125};
+const compC={tr:makeTrack([[-8,1300,95],[-4,1100,72],[0,950,56],[4,820,104],[8,700,76],[12,620,118],[16,560,86],[20,505,124],[24,470,96],[28,445,120],[32,425,100],[38,410,116],[44,400,104],[50,392,110],
+  [56,378,96],[62,356,66],[68,328,28],[74,302,-14],[80,284,-62],[86,276,-110],[92,294,-150],[98,332,-176],[104,382,-188],[110,432,-182],[116,478,-166]],-8,116),L:()=>108};
 
 // ---------------- 镜头（关键帧） ----------------
 const CK=[[0,395,0,1.95,1,0],[7.4,382,-10,2.03,1,0],[9.0,418,-112,3.0,1,0],[10.3,414,-108,3.05,1,0],[11.8,375,-35,2.05,1,0],[14.4,330,0,2.0,1,0],
@@ -143,7 +146,8 @@ function renderInk(t){const c=ictx;c.setTransform(1,0,0,1,0,0);c.globalComposite
   if(pd>0){DUCK.forEach(([x,y,rot])=>{c.save();c.translate(x*R,y*R);c.rotate(rot);[[0,0,5.5],[8,3,4.5],[3,-7,4]].forEach(([dx,dy,r])=>{c.globalAlpha=pd*0.55;c.beginPath();c.arc(dx,dy,r*pd,0,7);c.fill();c.globalAlpha=pd;c.lineWidth=1.1;c.stroke();});c.restore();});
     c.globalAlpha=pd;c.lineWidth=1.1;BUB.forEach(([x,y,r])=>{c.beginPath();c.arc(x*R,y*R,r,0,7);c.stroke();});c.globalAlpha=1;}
   c.restore();
-  if(t>=T_FREEZE){c.setTransform(MS,0,0,MS,MH-MS*PCX,MH-MS*PCY);const pose=fishPose(hero,Math.min(t,T_LEAVE));const ga=t<T_LEAVE?1:0.16+0.84*(1-smooth(T_LEAVE,T_LEAVE+0.4,t));c.globalAlpha=ga;drawYuan(c,pose,[0,0,0],1,1.5*MS);c.globalAlpha=1;const m=mouthOf(fishPose(hero,Math.min(t,T_LEAVE-0.02)));petalInk(c,m.x,m.y,m.rot,12*pose.L/150,[0,0,0],1,1.2);}
+  const fi=smooth(T_FREEZE-0.45,T_FREEZE-0.15,t);
+  if(fi>0){c.setTransform(MS,0,0,MS,MH-MS*PCX,MH-MS*PCY);const pose=fishPose(hero,Math.min(t,T_LEAVE));const ga=t<T_LEAVE?1:0.16+0.84*(1-smooth(T_LEAVE,T_LEAVE+0.4,t));c.globalAlpha=ga*fi;drawYuan(c,pose,[0,0,0],1,1.5*MS);c.globalAlpha=1;const m=mouthOf(fishPose(hero,Math.min(t,T_LEAVE-0.02)));petalInk(c,m.x,m.y,m.rot,12*pose.L/150,[0,0,0],fi,1.2);}
 }
 const COBNOISE=(()=>{const c=mk(MW,MW);const x=c.getContext('2d');const img=x.createImageData(MW,MW);const n1=noise2(71,26,26),n2=noise2(72,110,110);const s1=MW/26,s2=MW/110;
   for(let y=0;y<MW;y++)for(let xx=0;xx<MW;xx++){const v=n1(xx/s1,y/s1)*0.6+n2(xx/s2,y/s2)*0.4;img.data[(y*MW+xx)*4+3]=255*clamp(0.62+v*0.45,0,1);}x.putImageData(img,0,0);return c;})();
@@ -200,14 +204,14 @@ function drawHeroOutside(t,cam,TR){
   for(const ti of DRIPS){if(ti>t)break;const d=t-ti;if(d>1.9)continue;const q=spineAt(fishPose(hero,ti),0.93);if(q.x<=0||q.x>=80)continue;const rr=0.9+r()*1.6;
     ctx.fillStyle=`rgba(36,27,20,${0.38*(1-d/1.9)})`;ctx.beginPath();ctx.arc(q.x+(r()-.5)*6,q.y+(r()-.5)*8+d*7,rr,0,7);ctx.fill();}
   ctx.restore();
-  if(t<T_INSIDE||t>=T_FREEZE)return;const p=fishPose(hero,t);const np=nibPetal(t);
+  const fo=1-smooth(T_FREEZE-0.3,T_FREEZE,t);if(t<T_INSIDE||fo<=0)return;const p=fishPose(hero,t);const np=nibPetal(t);
   // 碰到什么就变成什么：还在墙上时是宋画里那条墨鱼（叼着花瓣），碰到青花盘的展台才变成青花的钴料线描
   const w7=lerp(P,P*16/9,cam.e7),qx0=PCX-w7/2,qx1=qx0+w7,qy0=-300,qy1=qy0+P;
   let mn=1e9,mx=-1e9,my0=1e9,my1=-1e9;for(const q of p.sp){mn=Math.min(mn,q.x);mx=Math.max(mx,q.x);my0=Math.min(my0,q.y);my1=Math.max(my1,q.y);}mn-=p.L*0.25;mx+=p.L*0.2;my0-=p.L*0.3;my1+=p.L*0.3;
   const touch=mn<qx1&&mx>qx0&&my1>qy0&&my0<qy1,whole=touch&&mn>=qx0&&mx<=qx1&&my0>=qy0&&my1<=qy1;
   if(!whole){inkLayer(TR,c=>{c.save();c.beginPath();c.rect(-6000,-3000,12000,6000);c.rect(qx0,qy0,w7,P);c.clip('evenodd');drawSong(c,p,cam.z);c.restore();});
     ctx.save();ctx.beginPath();ctx.rect(-6000,-3000,12000,6000);ctx.rect(qx0,qy0,w7,P);ctx.clip('evenodd');petal(ctx,np.x,np.y,np.rot,np.s,1,1);ctx.restore();}
-  if(touch){ctx.save();ctx.beginPath();ctx.rect(qx0,qy0,w7,P);ctx.clip();drawYuan(ctx,p,RAW,1,1.5*cam.z);ctx.fillStyle='rgba(244,240,232,0.9)';ctx.save();ctx.translate(np.x,np.y);ctx.rotate(np.rot);petalPath(ctx,np.s);ctx.fill();ctx.restore();petalInk(ctx,np.x,np.y,np.rot,np.s,RAW,1,1.1);ctx.restore();}
+  if(touch){ctx.save();ctx.globalAlpha=fo;ctx.beginPath();ctx.rect(qx0,qy0,w7,P);ctx.clip();drawYuan(ctx,p,RAW,1,1.5*cam.z);ctx.fillStyle='rgba(244,240,232,0.9)';ctx.save();ctx.translate(np.x,np.y);ctx.rotate(np.rot);petalPath(ctx,np.s);ctx.fill();ctx.restore();petalInk(ctx,np.x,np.y,np.rot,np.s,RAW,1,1.1);ctx.restore();}
   // 过界的地方溅几点墨和钴料
   if(touch&&!whole&&mn<qx1&&mx>qx1){let best=p.sp[0];for(const q of p.sp)if(Math.abs(q.x-qx1)<Math.abs(best.x-qx1))best=q;const k=clamp(1-Math.abs((p.sp[0].x+p.sp[p.N].x)/2-qx1)/(p.L*0.8));
     if(k>0){const r2=rng(Math.floor(t*30));ctx.save();ctx.globalCompositeOperation='multiply';

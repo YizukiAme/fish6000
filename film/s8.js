@@ -149,12 +149,20 @@ function nianFishParts(c,p,blk){const pr=PROF_NIAN,L=p.L,line=blk==='line';const
     // 须
     const m0=bodyAt(p,pr,0.0,0.0),s0=spineAt(p,0.02);for(const sg of [1,-1]){const a1=[m0[0]+s0.tx*L*0.06+s0.nx*sg*L*0.04,m0[1]+s0.ty*L*0.06+s0.ny*sg*L*0.04],b1=[a1[0]-s0.tx*L*0.02+s0.nx*sg*L*0.07,a1[1]-s0.ty*L*0.02+s0.ny*sg*L*0.07];KL([m0,a1,b1],1.4,970+sg,{ti:0.1,to:0.5});}
     KW=1;}}
-function drawNianFish(c,TR,p,t,ko){const cols={yellow:0,red:1,green:2,pink:3};
-  if(ko){layerBegin(eb1,TR);eb1.beginPath();eb1.rect(S8X-PR8,S8Y-PR8,2*PR8,2*PR8);eb1.clip();eb1.fillStyle='#000';nianFishParts(eb1,p,'yellow');eb1.globalCompositeOperation='source-in';eb1.drawImage(B8.paper,S8X-PR8,S8Y-PR8,2*PR8,2*PR8);eb1.globalCompositeOperation='source-over';
-    ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(EB1,0,0);ctx.restore();}
+// 鱼身先垫一层年画纸，套色版压在这层纸上：在纸面上和纸一模一样；离开了纸，它也是一条不透明的、印出来的鱼，
+// 红框、墙上的接缝都不会透过来。离开纸以后再给它一点影子，像一张从画里走出来的纸片
+const NIAN_PAPER='rgb(239,225,195)';
+function drawNianFish(c,TR,p,t){const cols={yellow:0,red:1,green:2,pink:3};const px=S8X-PR8-8,pw=2*PR8+16,z=TR[0];
+  layerBegin(hctx,TR);hctx.fillStyle=NIAN_PAPER;nianFishParts(hctx,p,'yellow');hctx.globalCompositeOperation='source-atop';hctx.drawImage(B8.paper,px,S8Y-PR8-8,pw,pw);hctx.globalCompositeOperation='source-over';
   for(const B of BLK){const k=b8k(t,cols[B.k]);if(k<=0||B.k==='green')continue;layerBegin(eb1,TR);eb1.translate(B.off[0],B.off[1]);eb1.fillStyle='#000';nianFishParts(eb1,p,B.k);layerColor(eb1,`rgb(${B.col})`);
-    ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=0.92*k;ctx.globalCompositeOperation='multiply';ctx.drawImage(EB1,0,0);ctx.restore();}
-  layerBegin(eb1,TR);eb1.fillStyle='#000';eb1.strokeStyle='#000';nianFishParts(eb1,p,'line');layerGrain(eb1,TR,0.12);layerColor(eb1,'rgb(28,22,20)');ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=0.95;ctx.drawImage(EB1,0,0);ctx.restore();}
+    hctx.save();hctx.setTransform(1,0,0,1,0,0);hctx.globalAlpha=0.92*k;hctx.globalCompositeOperation='multiply';hctx.drawImage(EB1,0,0);hctx.restore();}
+  // 套色的错位溢出鱼身的那一点剪掉
+  layerBegin(eb1,TR);eb1.fillStyle='#000';nianFishParts(eb1,p,'yellow');hctx.save();hctx.setTransform(1,0,0,1,0,0);hctx.globalCompositeOperation='destination-in';hctx.drawImage(EB1,0,0);hctx.restore();
+  layerBegin(eb1,TR);eb1.fillStyle='#000';eb1.strokeStyle='#000';nianFishParts(eb1,p,'line');layerGrain(eb1,TR,0.12);layerColor(eb1,'rgb(28,22,20)');
+  hctx.save();hctx.setTransform(1,0,0,1,0,0);hctx.globalAlpha=0.95;hctx.drawImage(EB1,0,0);hctx.restore();
+  ctx.save();ctx.setTransform(...TR);ctx.beginPath();ctx.rect(-1e5,-1e4,2e5,2e4);ctx.rect(px,S8Y-PR8-8,pw,pw);ctx.clip('evenodd');
+  ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=0.3;ctx.filter=`brightness(0) blur(${(4*z).toFixed(1)}px)`;ctx.drawImage(HEROC,-5*z,9*z);ctx.restore();
+  blitLayer(HEROC,1);}
 function drawPrint8(part,t){const cols={yellow:0,red:1,green:2,pink:3};const x0=S8X-PR8,y0=S8Y-PR8,w=2*PR8;
   if(part==='front')ctx.drawImage(B8.frontKO,x0,y0,w,w);
   for(const B of BLK){const k=b8k(t,cols[B.k]);if(k<=0)continue;const tmp=B8['tmp'+part+B.k]||(B8['tmp'+part+B.k]=(()=>{const cv=mk(P8,P8);const x=cv.getContext('2d');x.drawImage(B8[part+B.k],0,0);x.globalCompositeOperation='source-in';x.fillStyle=`rgb(${B.col})`;x.fillRect(0,0,P8,P8);return cv;})());
@@ -189,9 +197,9 @@ function drawS8Panel(t,cam,TR){const x0=S8X-S8W/2,y0=S8Y-S8W/2;panelShadow(x0,y0
   ctx.save();ctx.beginPath();ctx.rect(x0,y0,S8W,S8W);ctx.clip();ctx.drawImage(LINEN,0,0,840,840,x0,y0,S8W,S8W);ctx.globalCompositeOperation='multiply';ctx.fillStyle='rgb(150,42,36)';ctx.fillRect(x0,y0,S8W,S8W);ctx.globalCompositeOperation='source-over';
   ctx.save();ctx.shadowColor='rgba(30,10,8,0.45)';ctx.shadowBlur=14*cam.z;ctx.shadowOffsetY=5*cam.z;ctx.drawImage(B8.paper,S8X-PR8-8,S8Y-PR8-8,2*PR8+16,2*PR8+16);ctx.restore();
   drawPrint8('back',t);face8(t,TR);ctx.setTransform(...TR);ctx.restore();
-  if(t>=T8OWN[0]&&t<=T8OWN[1]){ctx.setTransform(...TR);const p=heroPoseNow(t);splitStyle(t,cam,TR,p,null,MEDIA.s8.path,MEDIA.s8.tIn,MEDIA.s8.prev,(t,cam,TR,p)=>drawNianFish(ctx,TR,p,t,true));}
-  ctx.setTransform(...TR);ctx.save();ctx.beginPath();ctx.rect(x0,y0,S8W,S8W);ctx.clip();drawPrint8('front',t);ctx.restore();
-  const sh=t-T8SLIP;ctx.strokeStyle='rgba(60,20,16,0.4)';ctx.lineWidth=1;ctx.strokeRect(x0,y0,S8W,S8W);}
+  ctx.strokeStyle='rgba(60,20,16,0.4)';ctx.lineWidth=1;ctx.strokeRect(x0,y0,S8W,S8W);   // 框边先画，鱼游过时压在它上面
+  if(t>=T8OWN[0]&&t<=T8OWN[1]){ctx.setTransform(...TR);const p=heroPoseNow(t);splitStyle(t,cam,TR,p,null,MEDIA.s8.path,MEDIA.s8.tIn,MEDIA.s8.prev,(t,cam,TR,p)=>drawNianFish(ctx,TR,p,t));}
+  ctx.setTransform(...TR);ctx.save();ctx.beginPath();ctx.rect(x0,y0,S8W,S8W);ctx.clip();drawPrint8('front',t);ctx.restore();}
 function styleNian(t,cam,TR,p,clip){if(clip){ctx.save();ctx.beginPath();ctx.rect(...clip);ctx.clip();}drawNianFish(ctx,TR,p,t);if(clip)ctx.restore();}
 
 // ---------------- 捌 的登记 ----------------

@@ -90,7 +90,7 @@ for k in range(24): tr.add(scratch(0.05 + rng.random() * 0.04, 0.02 + rng.random
 tr.add(scratch(0.25, 0.03), 51.25, 0.1); tr.add(scratch(0.15, 0.025), 51.45, 0.1)
 for tt in np.arange(50.5, 54.6, 0.5): tr.add(paiban(0.06 if int((tt - 50.5) / 0.5) % 2 else 0.08), tt, 0.3)
 tr.add(dizi_phrase([(0, 0.25, 'D5'), (0.25, 0.25, 'E5'), (0.5, 0.5, 'G5'), (1.0, 0.25, 'E5'), (1.25, 0.25, 'D5'), (1.5, 0.5, 'B4'), (2.0, 0.25, 'D5'), (2.25, 0.25, 'E5'), (2.5, 1.0, 'A5')], amp=0.12), 50.5, -0.15)
-tr.add(dizi_phrase([(0, 0.25, 'G5'), (0.25, 0.25, 'E5'), (0.5, 0.25, 'D5'), (0.75, 0.25, 'B4'), (1.0, 0.8, 'D5')], amp=0.11), 53.6, -0.2)
+tr.add(dizi_phrase([(0, 0.25, 'G5'), (0.25, 0.25, 'E5'), (0.5, 0.25, 'D5'), (0.75, 0.25, 'B4'), (1.0, 0.7, 'D5')], amp=0.11), 53.5, -0.2)   # 踩在拍板的拍子上
 
 
 # ===== 陆 · 宋画（古琴）、柒 · 元青花（弹拨、手鼓）：样片 v3 的配乐整体后移 =====
@@ -218,11 +218,11 @@ for k in range(12):
 n = int(0.9 * SR); st = tv(n); tr.add(np.sin(2 * np.pi * np.cumsum(7400 * (1 - 0.35 * st / 0.9)) / SR) * 0.0016 * np.exp(-st / 0.3), T10OFF, 0.0)
 
 # ===== 拾壹 · 代码：敲代码的声音；每种画法闪过，对应的乐器各响一下；最后古琴 =====
-rn = int(9.4 * SR); rs = np.arange(rn) / SR; tr.add(roomtone(rn, 0.02) * np.clip(rs / 0.05, 0, 1) * (0.5 + 0.5 * np.clip(rs / 2.6, 0, 1) ** 1.5) * np.clip((9.4 - rs) / 1.2, 0, 1), T10OFF, 0.0)
+rn = int(9.4 * SR); rs = np.arange(rn) / SR; tr.add(roomtone(rn, 0.024) * np.clip(rs / 0.05, 0, 1) * (0.5 + 0.5 * np.clip(rs / 2.6, 0, 1) ** 1.5) * np.clip((9.4 - rs) / 1.2, 0, 1), T10OFF, 0.0)
 tr.add(tick(0.012), 131.5, -0.2); tr.add(tick(0.008), 132.3, 0.15)   # 显像管凉下来的两声轻响
-tr.add(drone('D3', 7.2, amp=0.045, att=3.0, rel=1.6), 132.2, 0.0)
+tr.add(drone('D3', 7.2, amp=0.056, att=3.0, rel=1.6), 132.2, 0.0)
 for k in range(80):
-    tt = 134.55 + rng.random() * 3.1; tr.add(keyclick(0.03 + 0.02 * rng.random()), tt, 0.3 * (rng.random() - 0.5))
+    tt = 134.55 + rng.random() * 3.1; tr.add(keyclick(0.038 + 0.025 * rng.random()), tt, 0.3 * (rng.random() - 0.5))
 TF = 137.7
 flash = [xun_note('A4', 0.25, amp=0.07), qing('D5', 0.06, 2.0), paixiao_phrase([(0, 0.2, 'G5')], amp=0.06), bell('A4', 0.07, 2.5), paiban(0.05),
          qin('D4', 0.08, 3.0), lute('A4', 0.07, 1.5), suona_phrase([(0, 0.18, 'D6')], amp=0.05), banhu_phrase([(0, 0.18, 'E5')], amp=0.05),

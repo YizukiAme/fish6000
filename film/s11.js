@@ -51,8 +51,20 @@ function styleCode(t,cam,TR,p,clip){const pr=PROF.song,L=p.L;ctx.save();ctx.setT
   ctx.fillStyle='rgba(255,203,107,0.95)';p.sp.forEach((q,i)=>{if(i%2)return;ctx.beginPath();ctx.arc(q.x,q.y,(i%8?1.3:2.3)*lw*1.4,0,7);ctx.fill();});
   ctx.strokeStyle='rgba(130,170,255,0.7)';ctx.lineWidth=1*lw;for(let i=0;i<=p.N;i+=4){const q=p.sp[i];ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.lineTo(q.x+q.nx*L*0.06,q.y+q.ny*L*0.06);ctx.stroke();}
   const ey=bodyAt(p,pr,0.08,0.3);ctx.strokeStyle='rgba(127,219,202,0.9)';ctx.beginPath();ctx.arc(ey[0],ey[1],L*0.025,0,7);ctx.stroke();
-  ctx.font=`${(10*lw).toFixed(2)}px "DejaVu Sans Mono"`;ctx.fillStyle=`rgba(201,209,217,${0.75*la})`;const h=p.sp[0];ctx.fillText('u=0',h.x+6*lw,h.y-8*lw);const tl=p.sp[p.N];ctx.fillText('u=1',tl.x+4*lw,tl.y+12*lw);
-  ctx.fillText(`L=${L.toFixed(1)}`,h.x+6*lw,h.y+14*lw);ctx.restore();}
+  ctx.font=`${(10*lw).toFixed(2)}px "DejaVu Sans Mono"`;ctx.fillStyle=`rgba(201,209,217,${0.75*la})`;const h=p.sp[0];ctx.textAlign='right';ctx.fillText('u=0',h.x-7*lw,h.y-3*lw);ctx.fillText(`L=${L.toFixed(1)}`,h.x-7*lw,h.y+10*lw);ctx.textAlign='left';const tl=p.sp[p.N];ctx.fillText('u=1',tl.x+4*lw,tl.y+12*lw);
+  // 活的读数：全是屏上那段代码里的变量（s、phase、I、wave），每一帧现算；再有一个探针沿着脊线来回扫
+  if(la>0.01&&p.s!==undefined){const N=p.N,I=p.I||0,TAU=2*Math.PI,ph=((p.ph%TAU)+TAU)%TAU;const waveAt=u=>L*(0.012+0.08*u*u)*I*Math.sin(TAU*0.9*u-p.ph);
+    const hd=Math.atan2(p.sp[0].y-p.sp[3].y,p.sp[0].x-p.sp[3].x),th=((-hd*180/Math.PI)%360+360)%360;
+    const m=N>>1,qa=p.sp[m-3],qb=p.sp[m],qc=p.sp[m+3];let dk=Math.atan2(qc.y-qb.y,qc.x-qb.x)-Math.atan2(qb.y-qa.y,qb.x-qa.x);dk=Math.atan2(Math.sin(dk),Math.cos(dk));const kap=dk/((Math.hypot(qc.x-qa.x,qc.y-qa.y)/2)||1);
+    let xm=1e9,ym=-1e9;for(const q of p.sp){xm=Math.min(xm,q.x);ym=Math.max(ym,q.y);}ym+=L*0.2;
+    const sg=v=>(v>=0?'+':'\u2212')+Math.abs(v).toFixed(2);
+    const rows=[[['s=',p.s.toFixed(1)],['  v=',(p.spd||0).toFixed(1)],['  \u03b8=',th.toFixed(1)+'\u00b0']],[['phase=',ph.toFixed(3)],['  I=',I.toFixed(3)],['  \u03ba=',kap.toFixed(4)]],[['wave(1)=',sg(waveAt(1))]]];
+    ctx.textBaseline='alphabetic';rows.forEach((row,r)=>{let x=xm;const y=ym+(14+r*13)*lw;for(const [k,v] of row){ctx.fillStyle=`rgba(201,209,217,${0.6*la})`;ctx.fillText(k,x,y);x+=ctx.measureText(k).width;ctx.fillStyle=`rgba(247,140,108,${0.92*la})`;ctx.fillText(v,x,y);x+=ctx.measureText(v).width;}});
+    const pu=(t*0.38)%1,pq=spineAt(p,pu),lx=pq.x+10*lw,ly=Math.min(...p.sp.map(q=>q.y))-L*0.2-6*lw;
+    ctx.strokeStyle=`rgba(247,140,108,${0.9*la})`;ctx.lineWidth=1*lw;ctx.beginPath();ctx.arc(pq.x,pq.y,3.4*lw,0,7);ctx.stroke();
+    ctx.strokeStyle=`rgba(247,140,108,${0.35*la})`;ctx.beginPath();ctx.moveTo(pq.x,pq.y-3.4*lw);ctx.lineTo(pq.x+6*lw,ly+3*lw);ctx.lineTo(lx-2*lw,ly+3*lw);ctx.stroke();
+    let x=lx;for(const [k,v] of [['u=',pu.toFixed(3)],['  wave=',sg(waveAt(pu))]]){ctx.fillStyle=`rgba(201,209,217,${0.6*la})`;ctx.fillText(k,x,ly);x+=ctx.measureText(k).width;ctx.fillStyle=`rgba(247,140,108,${0.92*la})`;ctx.fillText(v,x,ly);x+=ctx.measureText(v).width;}}
+  ctx.restore();}
 // 每一站的样子在它身上闪一遍
 const FLASH_STYLES=()=>[styleBanpo,styleOBI,styleHan,styleBronze,styleCizhou,styleSong,styleYuanP,styleNian,stylePaper,styleMosaic,styleSignal];
 function style11(t,cam,TR,p,clip){const d=t-T11FLASH;const S=FLASH_STYLES();const k=Math.floor(d/0.19);if(d>=0&&k<S.length){S[k](t,cam,TR,p,clip);return;}styleCode(t,cam,TR,p,clip);}
@@ -141,9 +153,9 @@ function styleGlyph(t,cam,TR,p,clip){layerBegin(hctx,TR);if(clip){hctx.beginPath
 function styleBrushCZ(t,cam,TR,p,clip){layerBegin(hctx,TR);if(clip){hctx.beginPath();hctx.rect(...clip);hctx.clip();}drawCizhouFish(hctx,p,t-T5P);layerGrain(hctx,TR,0.1);blitLayer(HEROC,1);}
 function styleNianPlain(t,cam,TR,p,clip){if(clip){ctx.save();ctx.beginPath();ctx.rect(...clip);ctx.clip();}drawNianFish(ctx,TR,p,t,false);if(clip)ctx.restore();}
 const MEDIA={
-  s3:{path:c=>c.rect(S3X-270,S3Y-165,540,330),tIn:35.14,prev:styleGlyph},            // 拓片：碰到墨拓才变成汉画里的黑鱼
+  s3:{path:c=>c.rect(S3X-270,S3Y-165,540,330),tIn:35.14,prev:styleOBI},              // 拓片：碰到墨拓才变成汉画里的黑鱼
   s4:{path:c=>{c.moveTo(S4X+R4-4,S4Y);c.arc(S4X,S4Y,R4-4,0,2*Math.PI);},tIn:43.12,prev:styleHan},   // 铜洗：越过盆沿才变成铜
-  s8:{path:c=>c.rect(S8X-PR8,S8Y-PR8,2*PR8,2*PR8),tIn:103.35,prev:styleYuanP},      // 年画：进了纸才变成墨线鲤鱼
+  s8:{path:c=>c.rect(S8X-PR8-8,S8Y-PR8-8,2*PR8+16,2*PR8+16),tIn:103.35,prev:styleYuanP}, // 年画：越过红框和纸的交界，才变成墨线鲤鱼
   s11:{path:c=>c.rect(S11X-S11W/2,S11Y-S11W/2,S11W,S11W),tIn:135.4,prev:styleSignal}};// 代码：进了代码屏才只剩骨架
 for(const s of STN){const m=MEDIA[s.key];if(!m)continue;const cur=s.style;s.style=(t,cam,TR,p,clip)=>splitStyle(t,cam,TR,p,clip,m.path,m.tIn,m.prev,cur);}
 // 宋画：画外（墙上）还是磁州窑那条墨笔鱼，进了绢面才是宋画（画面里那部分由画自己来画）

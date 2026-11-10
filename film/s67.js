@@ -5,7 +5,7 @@ const trV=cam=>{const z=cam.z;return[z,0,0,z,W/2-(cam.x-OFF6)*z,H/2-cam.y*z];};
 const T7L=T6+V3.T_LEAVE;
 // 主角：从磁州窑游过来，接上样片里的路线；在盘里定住，眨一下尾，再从盘面上浮起来离开
 GK.push([55.4,-2962,22]);
-for(const [tv,x,y] of V3.KNOTS){if(tv<4.4||tv>27)continue;GK.push([tv+T6,x+OFF6,y]);}
+for(const [tv,x,y] of V3.KNOTS){if(tv<4.4||tv>27.5)continue;GK.push([tv+T6,x+OFF6,y]);}
 GK.push([T6+44.0,-4130.6,-5],[T7L,-4131.2,-5],[T7L+0.35,-4152,-6],[T7L+0.8,-4205,-4],[T7L+1.35,-4268,0],[T7L+2.0,-4340,3],[T7L+2.8,-4420,2],[T7L+3.7,-4505,0]);
 HL.push([54.6,116],[56.2,150],[T6+21.0,150],[T6+24.0,230],[T7L+0.4,230],[T7L+2.6,150]);
 HAMP.push(t=>(1-smooth(T6+V3.T_FREEZE-0.6,T6+V3.T_FREEZE,t)*(1-smooth(T7L-0.15,T7L+0.25,t)))*(1+0.5*smooth(T7L,T7L+0.2,t)*(1-smooth(T7L+0.8,T7L+1.6,t))));

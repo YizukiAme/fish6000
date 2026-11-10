@@ -47,7 +47,7 @@ function fishPose(def,t){const tr=def.tr;const L=def.L(t);const fk=(t-tr.T0)/tr.
   for(let i=0;i<=N;i++){const A=pts[Math.max(0,i-1)],B=pts[Math.min(N,i+1)];let dx=A.x-B.x,dy=A.y-B.y;const l=Math.hypot(dx,dy);if(l<1e-6&&i>0){pts[i].nx=pts[i-1].nx;pts[i].ny=pts[i-1].ny;continue;}dx/=(l||1);dy/=(l||1);pts[i].nx=-dy;pts[i].ny=dx;
     if(i>0&&pts[i].nx*pts[i-1].nx+pts[i].ny*pts[i-1].ny<-0.2){pts[i].nx=-pts[i].nx;pts[i].ny=-pts[i].ny;}}
   let flut=still;for(const wk of (def.winks||(def.wink?[def.wink]:[]))){const w=t-wk;if(w>0&&w<0.9)flut=Math.max(flut,Math.sin(Math.PI*w/0.9));}
-  return{sp:pts,N,L,sn,ph,t,flut};}
+  return{sp:pts,N,L,sn,ph,t,flut,s,I,spd:sp};}
 function spineAt(p,u){const f=clamp(u)*p.N;const i=Math.min(p.N-1,Math.floor(f));const a=f-i;const A=p.sp[i],B=p.sp[i+1];
   let nx=lerp(A.nx,B.nx,a),ny=lerp(A.ny,B.ny,a);const l=Math.hypot(nx,ny)||1;nx/=l;ny/=l;return{x:lerp(A.x,B.x,a),y:lerp(A.y,B.y,a),nx,ny,tx:ny,ty:-nx};}
 function mkProf(dw,bw,p,q,minw){let mx=0;for(let i=1;i<1000;i++){const x=i/1000;const v=Math.pow(x,p)*Math.pow(1-x,q);if(v>mx)mx=v;}

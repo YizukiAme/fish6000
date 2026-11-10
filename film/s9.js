@@ -4,20 +4,40 @@ const S9X=-5270,S9Y=0,S9W=420,AR9=55;
 const T9IN=108.7,T9CUT=[109.4,110.3],T9DROP=[110.3,110.75],T9OPEN=[110.8,111.65],T9LIFT=112.0;
 const RED9='rgb(196,30,34)';
 function arcPt9(deg){const a=deg*Math.PI/180;return[S9X+AR9*Math.cos(a),S9Y+AR9*Math.sin(a)];}
-// 剪纸鱼：红纸剪影，月牙纹、锯齿、眼孔
+// 剪纸鱼：一整张红纸剪出来。锯齿只剪在鳍和尾的外缘，身上的纹都是两头尖的小刀口（月牙、短线），
+// 不把纸剪断，所以鱼是完整的一片；尾巴按尾柄那一段的走向搭一个自己的小坐标，身子弯得再厉害也不会拧碎
 const PROF_CUT=mkProf(0.16,0.15,0.5,0.62,0.24);
-function paperSil(c,p){const pr=PROF_CUT,L=p.L;const Pp=(u,v)=>{const s=spineAt(p,u);return[s.x+s.nx*v*L,s.y+s.ny*v*L];};
-  bodyFill(c,edges(p,pr));c.fill();
-  const bt=bodyAt(p,pr,0.8,1),bb=bodyAt(p,pr,0.8,-1);c.beginPath();c.moveTo(bt[0],bt[1]);const tips=[];for(let j=0;j<=8;j++){const v=j/8;const yv=lerp(0.24,-0.24,v);const q=Pp(1.0+0.04*Math.sin(v*Math.PI),yv);const m=Pp(0.955,lerp(0.24,-0.24,v+0.0625));tips.push(q,m);}
-  tips.forEach(q=>c.lineTo(q[0],q[1]));c.lineTo(bb[0],bb[1]);c.closePath();c.fill();
-  for(const f of [finPts(p,pr,0.26,0.6,0.12,1,1.0),finPts(p,pr,0.3,0.4,0.08,-1,1.6),finPts(p,pr,0.6,0.72,0.07,-1,1.4)]){finPath(c,f);c.fill();}}
-function paperCuts(c,p){const pr=PROF_CUT,L=p.L,k=L/150;c.save();c.globalCompositeOperation='destination-out';c.lineCap='round';
-  const ey=bodyAt(p,pr,0.085,0.3);c.beginPath();c.arc(ey[0],ey[1],0.026*L,0,7);c.fill();
-  const g0=bodyAt(p,pr,0.2,0.8),g1=bodyAt(p,pr,0.235,0),g2=bodyAt(p,pr,0.2,-0.78);c.lineWidth=2.2*k;c.beginPath();c.moveTo(g0[0],g0[1]);c.quadraticCurveTo(g1[0],g1[1],g2[0],g2[1]);c.stroke();
-  for(const v of [0.48,0.0,-0.48])for(let u=0.3;u<0.76;u+=0.075){const q=bodyAt(p,pr,u+(v===0?0.037:0),v);const s=spineAt(p,u);const ang=Math.atan2(-s.ty,-s.tx);c.lineWidth=2.0*k;c.beginPath();c.arc(q[0],q[1],0.03*L,ang-1.0,ang+1.0);c.stroke();}
-  // 鳍上的锯齿：沿外缘剪小三角
-  for(const [f,st] of [[finPts(p,pr,0.26,0.6,0.12,1,1.0),2],[finPts(p,pr,0.6,0.72,0.07,-1,1.4),3]]){for(let i=1;i<f.out.length-1;i+=st){const a=f.out[i],b=f.base[i];c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(lerp(a[0],b[0],0.4)+(f.out[i+1][0]-a[0])*0.5,lerp(a[1],b[1],0.4)+(f.out[i+1][1]-a[1])*0.5);c.lineTo(f.out[i+1][0],f.out[i+1][1]);c.closePath();c.fill();}}
-  c.lineWidth=1.4*k;const sb=spineAt(p,0.86);for(let j=-2;j<=2;j++){const s=spineAt(p,0.98);const q=[s.x+s.nx*j*0.07*L,s.y+s.ny*j*0.07*L];c.beginPath();c.moveTo(lerp(sb.x,q[0],0.25),lerp(sb.y,q[1],0.25));c.lineTo(lerp(sb.x,q[0],0.9),lerp(sb.y,q[1],0.9));c.stroke();}
+function tail9(p,pr){const L=p.L,a=spineAt(p,0.72),b=spineAt(p,1);let tx=b.x-a.x,ty=b.y-a.y;const l=Math.hypot(tx,ty)||1;tx/=l;ty/=l;let nx=-ty,ny=tx;const s8=spineAt(p,0.8);if(nx*s8.nx+ny*s8.ny<0){nx=-nx;ny=-ny;}
+  const bt=bodyAt(p,pr,0.8,1),bb=bodyAt(p,pr,0.8,-1);const o=[(bt[0]+bb[0])/2,(bt[1]+bb[1])/2];return{bt,bb,F:(f,g)=>[o[0]+tx*f*L+nx*g*L,o[1]+ty*f*L+ny*g*L]};}
+function qPts(a,c,b,n){const out=[];for(let i=0;i<=n;i++){const v=i/n,w=1-v;out.push([w*w*a[0]+2*w*v*c[0]+v*v*b[0],w*w*a[1]+2*w*v*c[1]+v*v*b[1]]);}return out;}
+// 沿一段边剪锯齿：奇数点沿边的法线往里收一点
+function sawEdge(c,pts,center,depth){for(let i=0;i<pts.length;i++){const q=pts[i];if(i%2&&i<pts.length-1){const a=pts[i-1],b=pts[i+1];let nx=-(b[1]-a[1]),ny=b[0]-a[0];const l=Math.hypot(nx,ny)||1;nx/=l;ny/=l;if((center[0]-q[0])*nx+(center[1]-q[1])*ny<0){nx=-nx;ny=-ny;}c.lineTo(q[0]+nx*depth,q[1]+ny*depth);}else c.lineTo(q[0],q[1]);}}
+function tailPath9(c,p,pr){const L=p.L,T=tail9(p,pr),F=T.F;const U=F(0.21,0.22),N=F(0.12,0),D=F(0.21,-0.22),ctr=F(0.1,0);
+  const up=qPts(U,F(0.15,0.09),N,10),dn=qPts(N,F(0.15,-0.09),D,10).slice(1);
+  c.moveTo(T.bt[0],T.bt[1]);qPts(T.bt,F(0.06,0.12),U,8).slice(1).forEach(q=>c.lineTo(q[0],q[1]));sawEdge(c,up.slice(1),ctr,0.018*L);sawEdge(c,dn,ctr,0.018*L);
+  qPts(D,F(0.06,-0.12),T.bb,8).slice(1).forEach(q=>c.lineTo(q[0],q[1]));c.closePath();}
+function finSaw9(c,f,depth){const n=f.out.length;c.moveTo(f.base[0][0],f.base[0][1]);
+  for(let i=0;i<n-1;i++){const a=f.out[i],b=f.out[i+1],ba=f.base[i],bb=f.base[i+1];c.lineTo(a[0],a[1]);if(depth>0){const m=[(a[0]+b[0])/2,(a[1]+b[1])/2],mb=[(ba[0]+bb[0])/2,(ba[1]+bb[1])/2];c.lineTo(lerp(m[0],mb[0],depth),lerp(m[1],mb[1],depth));}}
+  c.lineTo(f.out[n-1][0],f.out[n-1][1]);for(let i=n-1;i>=0;i--)c.lineTo(f.base[i][0],f.base[i][1]);c.closePath();}
+const FINS9=(p,pr)=>[[finPts(p,pr,0.26,0.6,0.12,1,1.0),0.3],[finPts(p,pr,0.3,0.4,0.085,-1,1.6),0],[finPts(p,pr,0.6,0.72,0.075,-1,1.4),0.28]];
+function paperSil(c,p){const pr=PROF_CUT;bodyFill(c,edges(p,pr));c.fill();c.beginPath();tailPath9(c,p,pr);c.fill();for(const [f,d] of FINS9(p,pr)){c.beginPath();finSaw9(c,f,d);c.fill();}}
+// 一道两头尖的刀口（a→b，中间最宽 w；k 让它弯一点）
+function slit9(c,a,b,w,k=0){const dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1,nx=-dy/l,ny=dx/l,mx=(a[0]+b[0])/2+nx*k*l,my=(a[1]+b[1])/2+ny*k*l;
+  c.beginPath();c.moveTo(a[0],a[1]);c.quadraticCurveTo(mx+nx*w,my+ny*w,b[0],b[1]);c.quadraticCurveTo(mx-nx*w,my-ny*w,a[0],a[1]);c.fill();}
+// 月牙：外弧和内弧在两头收成尖
+function crescent9(c,cx,cy,r,ang,th){c.beginPath();const K=10;for(let i=0;i<=K;i++){const a=ang-1.05+2.1*i/K;c.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);}
+  for(let i=K;i>=0;i--){const a=ang-1.05+2.1*i/K,rr=r*(1-th*Math.sin(Math.PI*i/K));c.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);}c.closePath();c.fill();}
+function paperCuts(c,p){const pr=PROF_CUT,L=p.L;c.save();c.globalCompositeOperation='destination-out';c.fillStyle='#000';
+  const ey=bodyAt(p,pr,0.085,0.3);c.beginPath();c.arc(ey[0],ey[1],0.027*L,0,7);c.fill();
+  // 鳃：一道弯的长刀口
+  {const g0=bodyAt(p,pr,0.19,0.78),g2=bodyAt(p,pr,0.19,-0.74),g1=bodyAt(p,pr,0.235,0);const m=[(g0[0]+g2[0])/2,(g0[1]+g2[1])/2];const l=Math.hypot(g2[0]-g0[0],g2[1]-g0[1])||1;
+   const nx=-(g2[1]-g0[1])/l,ny=(g2[0]-g0[0])/l;const k=((g1[0]-m[0])*nx+(g1[1]-m[1])*ny)/l;slit9(c,g0,g2,0.012*L,k);}
+  // 鳞：三排月牙，错开半格
+  for(const v of [0.46,0.0,-0.46])for(let u=0.3;u<0.77;u+=0.075){const uu=u+(v===0?0.037:0);if(uu>0.76)continue;const q=bodyAt(p,pr,uu,v);const s=spineAt(p,uu);const ang=Math.atan2(-s.ty,-s.tx);crescent9(c,q[0],q[1],0.032*L,ang,0.34);}
+  // 鳍上的鳍条
+  for(const [f] of FINS9(p,pr))for(let i=3;i<f.base.length-2;i+=3){const a=f.base[i],o=f.out[i];slit9(c,[lerp(a[0],o[0],0.18),lerp(a[1],o[1],0.18)],[lerp(a[0],o[0],0.66),lerp(a[1],o[1],0.66)],0.006*L);}
+  // 尾上的刀口：从尾柄放射出去，剪到离边一点就停
+  {const F=tail9(p,pr).F;for(const g of [0.13,0.065,0,-0.065,-0.13])slit9(c,F(0.03,g*0.2),F(0.155-Math.abs(g)*0.25,g*1.15),0.006*L);}
   c.restore();}
 function mirrorPose(p,ax){return{...p,sp:p.sp.map(q=>({x:2*ax-q.x,y:q.y,nx:-q.nx,ny:q.ny}))};}
 // 右半边的纹样（鱼以外）：外圈、顶上的花、底下的浪、连到鱼背的水草

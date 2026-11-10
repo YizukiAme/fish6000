@@ -34,7 +34,9 @@ function applyLights(t,TR){const a=AMBIENT(t);lctx.setTransform(1,0,0,1,0,0);lct
   for(const L of LIGHTS){const k=L.k(t)*sk;if(k<=0.001)continue;lctx.save();lctx.translate(L.x,L.y-L.r*0.06);lctx.scale(1,1.18);lctx.translate(-L.x,-L.y);const g=lctx.createRadialGradient(L.x,L.y,0,L.x,L.y,L.r);
     for(const [o,f] of [[0,1],[0.3,0.9],[0.5,0.68],[0.65,0.44],[0.8,0.2],[0.9,0.07],[1,0]])g.addColorStop(o,`rgba(255,249,238,${f*k})`);lctx.fillStyle=g;lctx.fillRect(L.x-L.r,L.y-L.r,2*L.r,2*L.r);lctx.restore();}
   if(wk>0.001)washBand(0.32*wk,TR);
-  if(FISHL){const fk=FISHL.k(t);if(fk>0.001){flx.reset();flx.setTransform(...TR);flx.filter=`blur(${(46*TR[0]).toFixed(1)}px)`;flx.fillStyle=`rgba(255,248,236,${fk.toFixed(4)})`;FISHL.path(flx,t);
+  if(FISHL){const fk=FISHL.k(t);if(fk>0.001){flx.reset();flx.setTransform(...TR);flx.filter=`blur(${(46*TR[0]).toFixed(1)}px)`;flx.fillStyle='rgb(255,248,236)';FISHL.path(flx,t);
+    // 鱼身、背鳍、腹鳍先拼成不透明的一整块，再整体调亮度：鳍和身子叠住的那一溜不会更亮
+    flx.filter='none';flx.setTransform(1,0,0,1,0,0);flx.globalCompositeOperation='destination-in';flx.fillStyle=`rgba(0,0,0,${fk.toFixed(4)})`;flx.fillRect(0,0,W,H);flx.globalCompositeOperation='source-over';flx.setTransform(...TR);
     const [ex,ey,er]=FISHL.eye(t);flx.filter=`blur(${(26*TR[0]).toFixed(1)}px)`;flx.globalCompositeOperation='destination-out';flx.fillStyle='rgba(0,0,0,0.92)';flx.beginPath();flx.arc(ex,ey,er,0,7);flx.fill();
     if(FISHL.extra){flx.globalCompositeOperation='source-over';flx.filter=`blur(${(70*TR[0]).toFixed(1)}px)`;FISHL.extra(flx,t);}
     lctx.save();lctx.setTransform(1,0,0,1,0,0);lctx.globalCompositeOperation='lighter';lctx.drawImage(FLC,0,0);lctx.restore();}}
