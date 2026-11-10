@@ -1,49 +1,49 @@
 <div align="center">
 
-# 一条鱼，游过六千年
+# One Fish, Six Thousand Years
 
-<img src="docs/images/cover.jpg" alt="终章：十一件作品在墙上排成一条鱼" width="100%">
+<img src="docs/images/cover.jpg" alt="Finale: the eleven artworks arranged on the wall in the shape of a fish" width="100%">
 
-**一条鱼从六千年前的彩陶盆里游出来，一路游过十一件中国艺术品。<br>每碰到一件，它就变成那件作品里的样子。**
+**A fish swims out of a six-thousand-year-old painted pottery basin and through eleven works of Chinese art.<br>Whatever it touches, it becomes.**
 
-[⬇ 下载 1080p 30 帧成片](../../releases/latest) · [English](README.en.md)
+[⬇ Download the 1080p 30 fps film](../../releases/latest) · [中文](README.zh-CN.md)
 
 </div>
 
 ---
 
-片长两分三十四秒，没有用一张素材图，也没有一段录来的声音。
+The film runs 2 minutes 34 seconds. It uses no image assets and no recorded sound.
 
-画面里的每一帧都由 Canvas 2D 代码当场画出：陶土的颗粒、龟甲的裂纹、拓片的墨晕、绢的经纬、青花的发色、剪纸的毛边，都是代码画的。配乐也是用 Python 一个采样一个采样算出来的。
+Every frame is drawn live by Canvas 2D code: the grit of the clay, the cracks in the turtle shell, the ink bloom of a stone rubbing, the weave of silk, the cobalt of blue-and-white porcelain, the frayed edge of cut paper. The score is synthesized sample by sample in Python.
 
-整个仓库就是这部片子本身。clone 下来，用 Chrome 打开 `film.html`，它就开始放映。
+This repository is the film. Clone it, open `film.html` in Chrome, and it plays.
 
-## 十一站
+## Eleven stations
 
-<img src="docs/images/stations.jpg" alt="十一站与终章的画面" width="100%">
+<img src="docs/images/stations.jpg" alt="Frames from the eleven stations and the finale" width="100%">
 
-| | 作品 | 年代 | 鱼在这里 |
+| | Artwork | Period | What the fish becomes |
 |:-:|---|---|---|
-| 壹 | 人面鱼纹彩陶盆 | 新石器时代 · 仰韶文化 | 画着画着，成了纹 |
-| 贰 | 甲骨卜辞 | 商 | 化成甲骨文的刀刻笔画 |
-| 叁 | 捕鱼画像石 · 拓片 | 东汉 | 正好撞进渔夫收起的网，又跳了出去 |
-| 肆 | 双鱼铜洗 | 东汉 | 在盆里绕一圈，铸成了铜 |
-| 伍 | 白地黑花鱼藻纹枕 | 宋金 · 磁州窑 | 变成几笔黑花 |
-| 陆 | 落花游鱼 | 宋 · 绢本设色 | 在绢上和落花一起漂 |
-| 柒 | 青花鱼藻纹盘 | 元 · 景德镇窑 | 落笔，入窑，烧出了蓝 |
-| 捌 | 连年有余 | 清 · 木版年画 | 染上年画的红与金 |
-| 玖 | 双鱼 | 民间剪纸 | 被剪刀从红纸上剪了出来 |
-| 拾 | 游 | 电子游戏 · 像素 | 碎成一格一格的像素 |
-| 拾壹 | 这一站 | 代码 | 只剩画出它的那几行代码 |
-| 终 | | | 回头看，走过的路是一条鱼 |
+| 1 | Painted basin with human-face and fish motif | Neolithic · Yangshao culture | A painted pattern |
+| 2 | Oracle-bone inscription | Shang | Strokes cut into turtle shell |
+| 3 | Fishing scene, stone relief rubbing | Eastern Han | A catch: it swims into the net just as the fisherman lifts it, then leaps free |
+| 4 | Bronze basin with twin fish | Eastern Han | Cast bronze |
+| 5 | Cizhou pillow, black-on-white fish and weeds | Song–Jin | A few strokes of black brush |
+| 6 | Fish among falling petals | Song · ink and color on silk | Drifting on silk with the petals |
+| 7 | Blue-and-white dish with fish and weeds | Yuan · Jingdezhen | Painted, fired, turned blue |
+| 8 | *Abundance Year after Year* | Qing · woodblock New Year print | Red and gold of the print |
+| 9 | Twin fish | Folk paper-cut | Cut out of red paper by scissors |
+| 10 | *Swim* | Video game · pixels | Shattered into pixels |
+| 11 | This station | Code | Only the lines of code that draw it |
+| Finale | | | Looking back, the path it took is a fish |
 
-片中的作品都是照着真实的文物和样式，用代码重新画的，不是复制品。
+The artworks are redrawn in code after real relics and styles. They are not reproductions.
 
-## 自己放一遍
+## Play it yourself
 
-**只看：** 用 Chrome 或 Edge 打开 `film.html`。空格播放，`[` `]` 跳站，`,` `.` 逐帧，`S` 存下当前这一帧。
+**Just watch:** open `film.html` in Chrome or Edge. Space plays, `[` `]` jump between stations, `,` `.` step one frame, `S` saves the current frame.
 
-**渲染成视频：** 需要 Node.js 20+、ffmpeg 和 Chrome。
+**Render to video:** requires Node.js 20+, ffmpeg and Chrome.
 
 ```bash
 npm install
@@ -51,21 +51,21 @@ node render.js video film_silent.mp4 --jobs 4
 node render.js mux film_silent.mp4 score_full.wav film.mp4
 ```
 
-4K 60 帧要在第二行加上 `--fps 60 --scale 2 --crf 20 --preset medium`。这不是把 1080p 放大，而是把每张画布按两倍像素重画。
+For 4K at 60 fps, add `--fps 60 --scale 2 --crf 20 --preset medium` to the second line. Every canvas is redrawn at twice the pixel density; nothing is upscaled.
 
-**改了代码之后：** 运行 `python build.py`，把 `film/` 里的源码重新拼成 `film.html`。
+**After editing the source:** run `python build.py` to assemble `film/` into `film.html`.
 
-参数、配乐重新生成、每一站对应哪个文件、动手前该知道的几个坑，都写在 [docs/制作说明.md](docs/制作说明.md) 里。
+The full options, how to regenerate the score, which file draws which station, and the pitfalls worth knowing are in [docs/制作说明.md](docs/制作说明.md) (Chinese).
 
-## 它是怎么动起来的
+## How it moves
 
-- **每一帧只由时间决定。** 整部片子是一个函数 `render(t)`。给它一个时间，它就画出那一刻的画面，不依赖上一帧的状态。所以可以随意跳着看，也可以拆成很多段，交给多个浏览器同时渲染。
-- **鱼是一根会摆的脊线。** 主角沿着一条由关键点连成的路游，身体是顺着走过的路排开的一串骨节，再沿脊线长出鳍、鳞和尾巴。十一种画法共用同一副骨架。
-- **碰到什么，就变成什么。** 每件作品有自己的轮廓。鱼身在轮廓里面的部分换成新画法，外面的部分还是上一站的样子。所以变化是从鱼碰到作品的那一点开始，一寸寸蔓延过去的。
-- **声音也是算出来的。** `score_full.py` 用 numpy 合成每一个音、每一下水声，再按画面里的时间点摆放好。
+- **Each frame depends only on time.** The film is one function, `render(t)`. It holds no state between frames, so you can scrub anywhere and split rendering across many browsers at once.
+- **The fish is a swinging spine.** It follows a path through keyframes. Its body is a chain of joints laid along the path it has just swum, and fins, scales and tail grow from that spine. All eleven styles share the same skeleton.
+- **It becomes what it touches.** Each artwork has an outline. The part of the fish inside it takes the new style; the part outside keeps the old one. The change starts at the point of contact and spreads along the body.
+- **The sound is computed too.** `score_full.py` synthesizes every note and splash with NumPy and places each one on the picture's timeline.
 
-## 许可
+## License
 
-代码以 [MIT](LICENSE) 许可发布。
+The code is released under the [MIT License](LICENSE).
 
-内嵌字体是 Noto Serif CJK SC 和 DejaVu Sans Mono 的子集，分别遵循各自的原许可证，见 [Noto 字体许可](licenses/NotoSerifCJK-OFL.txt) 和 [DejaVu 字体许可](licenses/DejaVu-LICENSE.txt)。
+The embedded fonts are subsets of Noto Serif CJK SC and DejaVu Sans Mono, each under its own original license; see the [Noto font license](licenses/NotoSerifCJK-OFL.txt) and [DejaVu font license](licenses/DejaVu-LICENSE.txt).
