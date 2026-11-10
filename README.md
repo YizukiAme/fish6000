@@ -1,131 +1,71 @@
-# 《一条鱼，游过六千年》工程包
+<div align="center">
 
-一条鱼沿着展墙游过十一件中国艺术品：彩陶、甲骨、拓片、铜洗、磁州窑、宋画、青花、年画、剪纸、像素、代码。每碰到一件作品，它就变成那件作品里的样子。
+# 一条鱼，游过六千年
 
-整部片子没有用一张素材图。画面全部由 Canvas 2D 代码逐帧画出，配乐由 Python（numpy）逐个采样算出。
+<img src="docs/images/cover.jpg" alt="终章：十一件作品在墙上排成一条鱼" width="100%">
+
+**一条鱼从六千年前的彩陶盆里游出来，一路游过十一件中国艺术品。<br>每碰到一件，它就变成那件作品里的样子。**
+
+[⬇ 下载 4K 60 帧成片](../../releases/latest) · [English](README.en.md)
+
+</div>
 
 ---
 
-## 一、最快的玩法：直接看
+片长两分三十四秒，没有用一张素材图，也没有一段录来的声音。
 
-用 **Chrome 或 Edge** 打开 `film.html`，等几秒"准备中"，下面就会出现播放条。
+画面里的每一帧都由 Canvas 2D 代码当场画出：陶土的颗粒、龟甲的裂纹、拓片的墨晕、绢的经纬、青花的发色、剪纸的毛边，都是代码画的。配乐也是用 Python 一个采样一个采样算出来的。
 
-| 按键 | 作用 |
-|---|---|
-| 空格 | 播放 / 暂停 |
-| ← → | 前后 1 秒（按住 Shift 是 5 秒） |
-| `,` `.` | 逐帧后退 / 前进 |
-| `[` `]` | 上一站 / 下一站 |
-| S | 把当前帧存成 PNG |
-| F | 全屏 |
-| M | 静音 |
+整个仓库就是这部片子本身。clone 下来，用 Chrome 打开 `film.html`，它就开始放映。
 
-- 配乐读取同一文件夹里的 `score_full.wav`，没有这个文件就静音播放。
-- 每一帧都是现算的。电脑慢的话预览会掉帧，但不影响渲染出来的视频。
+## 十一站
 
-## 二、改代码
+<img src="docs/images/stations.jpg" alt="十一站与终章的画面" width="100%">
 
-源码都在 `film/` 里。改完运行：
+| | 作品 | 年代 | 鱼在这里 |
+|:-:|---|---|---|
+| 壹 | 人面鱼纹彩陶盆 | 新石器时代 · 仰韶文化 | 画着画着，成了纹 |
+| 贰 | 甲骨卜辞 | 商 | 化成甲骨文的刀刻笔画 |
+| 叁 | 捕鱼画像石 · 拓片 | 东汉 | 正好撞进渔夫收起的网，又跳了出去 |
+| 肆 | 双鱼铜洗 | 东汉 | 在盆里绕一圈，铸成了铜 |
+| 伍 | 白地黑花鱼藻纹枕 | 宋金 · 磁州窑 | 变成几笔黑花 |
+| 陆 | 落花游鱼 | 宋 · 绢本设色 | 在绢上和落花一起漂 |
+| 柒 | 青花鱼藻纹盘 | 元 · 景德镇窑 | 落笔，入窑，烧出了蓝 |
+| 捌 | 连年有余 | 清 · 木版年画 | 染上年画的红与金 |
+| 玖 | 双鱼 | 民间剪纸 | 被剪刀从红纸上剪了出来 |
+| 拾 | 游 | 电子游戏 · 像素 | 碎成一格一格的像素 |
+| 拾壹 | 这一站 | 代码 | 只剩画出它的那几行代码 |
+| 终 | | | 回头看，走过的路是一条鱼 |
 
-```
-python build.py
-```
+片中的作品都是照着真实的文物和样式，用代码重新画的，不是复制品。
 
-它会把 `film/*.js` 按顺序拼成 `film.html`，刷新浏览器就能看到改动。在 macOS / Linux 上也可以运行 `film/build.sh`，效果一样。
+## 自己放一遍
 
-## 三、渲染成视频
+**只看：** 用 Chrome 或 Edge 打开 `film.html`。空格播放，`[` `]` 跳站，`,` `.` 逐帧，`S` 存下当前这一帧。
 
-需要准备：
+**渲染成视频：** 需要 Node.js 20+、ffmpeg 和 Chrome。
 
-- Node.js 18 或更新版本
-- ffmpeg（命令行里能直接运行 `ffmpeg`）
-- Chrome 或 Edge
-
-第一次使用时，先在这个文件夹里运行一次 `npm install`。之后：
-
-```
-node render.js video film_silent.mp4              # 全片 154 秒，无声
-node render.js video film_silent.mp4 --jobs 6     # 6 个浏览器分段同时渲，最后自动拼起来
-node render.js video test.mp4 10 --from 30        # 只渲第 30–40 秒
-node render.js stills 35 42.5 101                 # 出静帧到 stills/
-node render.js mux film_silent.mp4 score_full.wav film_full.mp4   # 加配乐和母带处理，得到成片
-node render.js video film_4k60_silent.mp4 --fps 60 --scale 2 --crf 20 --preset medium   # 4K 60 帧
+```bash
+npm install
+node render.js video film_silent.mp4 --jobs 4
+node render.js mux film_silent.mp4 score_full.wav film.mp4
 ```
 
-- `--scale 2` 是真 4K：所有画布按 2 倍像素重新画，构图和 1080p 完全一样，不是放大。浏览器里看 4K 效果可以打开 `film.html?scale=2`。
-- 4K 60 帧的帧数是 1080p 30 帧的两倍，每帧像素是四倍，所以渲染慢得多。`--crf` 和 `--preset` 是 x264 的画质与速度，数字越小越清晰、文件也越大。
-- 4K 时每一路大约要 3 GB 内存（浏览器约 1.2 GB，x264 编码约 1.7 GB）。`--jobs` 不要超过「内存 GB ÷ 3.5」，比如 32 GB 内存最多开 8 路。浏览器中途崩了，脚本会自动重开浏览器、重试那一帧，不会前功尽弃。
-- 4K 渲完后同样要 `node render.js mux film_4k60_silent.mp4 score_full.wav film_4k60.mp4` 加上配乐。
+4K 60 帧要在第二行加上 `--fps 60 --scale 2 --crf 20 --preset medium`。这不是把 1080p 放大，而是把每张画布按两倍像素重画。
 
-- 不写 `--jobs` 时，会按 CPU 核数自动选（取核数的一半）。
-- 参考速度：我这边是 2 核机器，单路渲完全片约 15 分钟。8 核电脑开 4 路，应该几分钟就够。
-- 如果提示找不到浏览器，就设置环境变量 `CHROME` 为浏览器程序的路径。例如在 Windows PowerShell 里：
-  `$env:CHROME="C:\Program Files\Google\Chrome\Application\chrome.exe"`
-- 如果 ffmpeg 不在 PATH 里，就设置环境变量 `FFMPEG`。
+**改了代码之后：** 运行 `python build.py`，把 `film/` 里的源码重新拼成 `film.html`。
 
-## 四、重新生成配乐
+参数、配乐重新生成、每一站对应哪个文件、动手前该知道的几个坑，都写在 [docs/制作说明.md](docs/制作说明.md) 里。
 
-```
-pip install numpy
-python score_full.py 154.0 score_full.wav
-```
+## 它是怎么动起来的
 
-## 五、每一站在哪
+- **每一帧只由时间决定。** 整部片子是一个函数 `render(t)`。给它一个时间，它就画出那一刻的画面，不依赖上一帧的状态。所以可以随意跳着看，也可以拆成很多段，交给多个浏览器同时渲染。
+- **鱼是一根会摆的脊线。** 主角沿着一条由关键点连成的路游，身体是顺着走过的路排开的一串骨节，再沿脊线长出鳍、鳞和尾巴。十一种画法共用同一副骨架。
+- **碰到什么，就变成什么。** 每件作品有自己的轮廓。鱼身在轮廓里面的部分换成新画法，外面的部分还是上一站的样子。所以变化是从鱼碰到作品的那一点开始，一寸寸蔓延过去的。
+- **声音也是算出来的。** `score_full.py` 用 numpy 合成每一个音、每一下水声，再按画面里的时间点摆放好。
 
-| 站 | 大约从 | 代码 |
-|---|---|---|
-| 壹 彩陶（含片头） | 0:00 | `s1.js` |
-| 贰 甲骨 | 0:24 | `s2.js` |
-| 叁 拓片 | 0:32 | `s3.js` |
-| 肆 铜洗 | 0:41 | `s4.js` |
-| 伍 磁州窑 | 0:48 | `s5.js` |
-| 陆 宋画 | 0:54 | `v3core.js`（画面）+ `s67.js`（接进全片） |
-| 柒 青花 | 1:12 | 同上 |
-| 捌 年画 | 1:40 | `s8.js` |
-| 玖 剪纸 | 1:47 | `s9.js` |
-| 拾 像素 | 1:54 | `s10.js` |
-| 拾壹 代码 + 终章 | 2:12 / 2:20 | `s11.js` |
+## 许可
 
-其余文件的分工：
+代码以 [MIT](LICENSE) 许可发布。
 
-- `head.js`：网页外壳和公共小函数
-- `fonts.js`：内嵌字体
-- `tex.js`：纸、绢、颗粒等纹理
-- `fish.js`：鱼的骨架和身体
-- `seal*.js`：篆字和印章
-- `world.js`：展墙、镜头、灯光、字幕
-- `hero.js`：主角
-- `main.js`：每一帧的总流程
-- `player.js`：预览播放条
-
-## 六、想动手改，先知道这几件事
-
-- **每一帧都只由时间 t 决定。** 所有画面都从 `render(t)`（`main.js`）算出，不依赖"上一帧的状态"。所以可以随便跳着看，也能分段并行渲染。
-- **坐标：** 展墙是一条横轴，作品从右往左排，x 越往后越小。
-  - 镜头关键帧在 `CK` 里，格式是 `{t, x, y, z}`，其中 z 是放大倍数。
-- **主角：**
-  - 路线是 `GK` 里的关键点 `[时间, x, y]`。
-  - 身长在 `HL`，摆尾幅度和频率分别在 `HAMP`、`HFB`。
-  - 鱼身是一根沿着走过的路排开、会摆动的脊线（`fish.js` 的 `fishPose`）。
-- **每一站** 都用 `STN.push({...})` 登记：
-  - `draw`：画作品本身
-  - `style`：鱼在这一站的画法
-  - `owns` / `drawHero`：这段时间里鱼交给这一站自己画，比如被网捞起、被剪刀剪出来
-- **"碰到什么，就变成什么"：** 用 `s11.js` 末尾的 `MEDIA` 表，加上 `world.js` 里的 `splitStyle` 实现。
-  - 鱼在作品轮廓里面的部分用新画法，外面的部分保持上一站的样子。
-  - 到了 `tIn` 时刻，整条鱼换成新画法。
-- **其他：** 字幕在 `LINES`，展签在 `LABELS`，灯光在 `LIGHTS`。
-- **一个坑：** 用 `ctx.clip('evenodd')` 挖洞时，构造路径的函数里不能再调用 `beginPath()`，否则洞会被清掉。之前好几次"鱼突然消失"都是这个原因。
-- **字体：** 已内嵌在 `film/fonts.js`，只包含片中用到的字，所以换电脑打开字形也一样。
-  - 如果改字幕时加了新字，新字会先用系统字体显示。
-  - 想补全的话：装好 Noto Serif CJK SC（思源宋体），运行 `pip install fonttools brotli`，再运行 `python tools/make_fonts.py 字体所在文件夹`。
-- **小工具：**
-  - `node tools/probe.js "heroPoseNow(46).sp[0]"`：在页面里算一个表达式，比如看第 46 秒鱼头在哪。
-  - `python tools/sheet.py 名字 35 36 37`：把 `stills/` 里的静帧拼成一张对照图。
-
-## 字体许可
-
-- Noto Serif CJK：SIL Open Font License 1.1
-- DejaVu Sans Mono：DejaVu / Bitstream Vera 许可
-
-两者都允许自由再分发，内嵌的是只含部分字符的子集。
+内嵌字体是 Noto Serif CJK SC 和 DejaVu Sans Mono 的子集，分别遵循各自的原许可证，见 [Noto 字体许可](licenses/NotoSerifCJK-OFL.txt) 和 [DejaVu 字体许可](licenses/DejaVu-LICENSE.txt)。
