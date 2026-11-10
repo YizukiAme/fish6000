@@ -146,8 +146,8 @@ function renderInk(t){const c=ictx;c.setTransform(1,0,0,1,0,0);c.globalComposite
   if(pd>0){DUCK.forEach(([x,y,rot])=>{c.save();c.translate(x*R,y*R);c.rotate(rot);[[0,0,5.5],[8,3,4.5],[3,-7,4]].forEach(([dx,dy,r])=>{c.globalAlpha=pd*0.55;c.beginPath();c.arc(dx,dy,r*pd,0,7);c.fill();c.globalAlpha=pd;c.lineWidth=1.1;c.stroke();});c.restore();});
     c.globalAlpha=pd;c.lineWidth=1.1;BUB.forEach(([x,y,r])=>{c.beginPath();c.arc(x*R,y*R,r,0,7);c.stroke();});c.globalAlpha=1;}
   c.restore();
-  const fi=smooth(T_FREEZE-0.45,T_FREEZE-0.15,t);
-  if(fi>0){c.setTransform(MS,0,0,MS,MH-MS*PCX,MH-MS*PCY);const pose=fishPose(hero,Math.min(t,T_LEAVE));const ga=t<T_LEAVE?1:0.16+0.84*(1-smooth(T_LEAVE,T_LEAVE+0.4,t));c.globalAlpha=ga*fi;drawYuan(c,pose,[0,0,0],1,1.5*MS);c.globalAlpha=1;const m=mouthOf(fishPose(hero,Math.min(t,T_LEAVE-0.02)));petalInk(c,m.x,m.y,m.rot,12*pose.L/150,[0,0,0],fi,1.2);}
+  // 鱼一碰到盘面，盘上的那部分就是画在釉坯上的钴料（和盘上别的纹样同一种墨色），一直到它定住、入窑；所以定住那一刻不会再变样
+  if(t>=T_INSIDE){c.setTransform(MS,0,0,MS,MH-MS*PCX,MH-MS*PCY);const pose=fishPose(hero,Math.min(t,T_LEAVE));const ga=t<T_LEAVE?1:0.16+0.84*(1-smooth(T_LEAVE,T_LEAVE+0.4,t));c.globalAlpha=ga;drawYuan(c,pose,[0,0,0],1,1.5*MS);c.globalAlpha=1;const np=nibPetal(Math.min(t,T_LEAVE-0.02));petalInk(c,np.x,np.y,np.rot,np.s,[0,0,0],1,1.2);}
 }
 const COBNOISE=(()=>{const c=mk(MW,MW);const x=c.getContext('2d');const img=x.createImageData(MW,MW);const n1=noise2(71,26,26),n2=noise2(72,110,110);const s1=MW/26,s2=MW/110;
   for(let y=0;y<MW;y++)for(let xx=0;xx<MW;xx++){const v=n1(xx/s1,y/s1)*0.6+n2(xx/s2,y/s2)*0.4;img.data[(y*MW+xx)*4+3]=255*clamp(0.62+v*0.45,0,1);}x.putImageData(img,0,0);return c;})();
@@ -167,7 +167,8 @@ function drawPlate(t,cx,cy,z){
   ctx.lineWidth=1.6;ctx.strokeStyle='rgba(40,30,20,0.16)';ctx.beginPath();ctx.arc(cx,cy,R*0.8,0,7);ctx.stroke();
   ctx.strokeStyle='rgba(255,255,255,0.35)';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(cx,cy,R*0.805,Math.PI*0.9,Math.PI*1.7);ctx.stroke();
   ctx.strokeStyle='rgba(30,20,10,0.25)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,R-0.8,0,7);ctx.stroke();
-  if(t>=TP){renderInk(t);colorizeInk(rgba(mixA(RAW,BLUE,cp),1));
+  const fishOn=t>=T_INSIDE&&t<TP&&fishPose(hero,t).sp.some(q=>Math.hypot(q.x-cx,q.y-cy)<R+12);
+  if(t>=TP||fishOn){renderInk(t);colorizeInk(rgba(mixA(RAW,BLUE,cp),1));
     ctx.save();ctx.beginPath();ctx.arc(cx,cy,R-1,0,7);ctx.clip();
     if(cp>0.01){ctx.globalAlpha=0.35*cp;ctx.filter=`blur(${(2.2*z).toFixed(1)}px)`;ctx.drawImage(COL,cx-260,cy-260,520,520);ctx.filter='none';}
     ctx.globalAlpha=0.94;ctx.globalCompositeOperation='multiply';if(cp>0.01)ctx.filter=`blur(${(0.45*z*cp).toFixed(2)}px)`;ctx.drawImage(COL,cx-260,cy-260,520,520);ctx.filter='none';ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
@@ -204,14 +205,14 @@ function drawHeroOutside(t,cam,TR){
   for(const ti of DRIPS){if(ti>t)break;const d=t-ti;if(d>1.9)continue;const q=spineAt(fishPose(hero,ti),0.93);if(q.x<=0||q.x>=80)continue;const rr=0.9+r()*1.6;
     ctx.fillStyle=`rgba(36,27,20,${0.38*(1-d/1.9)})`;ctx.beginPath();ctx.arc(q.x+(r()-.5)*6,q.y+(r()-.5)*8+d*7,rr,0,7);ctx.fill();}
   ctx.restore();
-  const fo=1-smooth(T_FREEZE-0.3,T_FREEZE,t);if(t<T_INSIDE||fo<=0)return;const p=fishPose(hero,t);const np=nibPetal(t);
+  if(t<T_INSIDE||t>=T_FREEZE)return;const p=fishPose(hero,t);const np=nibPetal(t);
   // 碰到什么就变成什么：还在墙上时是宋画里那条墨鱼（叼着花瓣），碰到青花盘的展台才变成青花的钴料线描
   const w7=lerp(P,P*16/9,cam.e7),qx0=PCX-w7/2,qx1=qx0+w7,qy0=-300,qy1=qy0+P;
   let mn=1e9,mx=-1e9,my0=1e9,my1=-1e9;for(const q of p.sp){mn=Math.min(mn,q.x);mx=Math.max(mx,q.x);my0=Math.min(my0,q.y);my1=Math.max(my1,q.y);}mn-=p.L*0.25;mx+=p.L*0.2;my0-=p.L*0.3;my1+=p.L*0.3;
   const touch=mn<qx1&&mx>qx0&&my1>qy0&&my0<qy1,whole=touch&&mn>=qx0&&mx<=qx1&&my0>=qy0&&my1<=qy1;
   if(!whole){inkLayer(TR,c=>{c.save();c.beginPath();c.rect(-6000,-3000,12000,6000);c.rect(qx0,qy0,w7,P);c.clip('evenodd');drawSong(c,p,cam.z);c.restore();});
     ctx.save();ctx.beginPath();ctx.rect(-6000,-3000,12000,6000);ctx.rect(qx0,qy0,w7,P);ctx.clip('evenodd');petal(ctx,np.x,np.y,np.rot,np.s,1,1);ctx.restore();}
-  if(touch){ctx.save();ctx.globalAlpha=fo;ctx.beginPath();ctx.rect(qx0,qy0,w7,P);ctx.clip();drawYuan(ctx,p,RAW,1,1.5*cam.z);ctx.fillStyle='rgba(244,240,232,0.9)';ctx.save();ctx.translate(np.x,np.y);ctx.rotate(np.rot);petalPath(ctx,np.s);ctx.fill();ctx.restore();petalInk(ctx,np.x,np.y,np.rot,np.s,RAW,1,1.1);ctx.restore();}
+  if(touch){ctx.save();ctx.beginPath();ctx.rect(qx0,qy0,w7,P);ctx.moveTo(PCX+R-1,PCY);ctx.arc(PCX,PCY,R-1,0,2*Math.PI);ctx.clip('evenodd');drawYuan(ctx,p,RAW,1,1.5*cam.z);ctx.fillStyle='rgba(244,240,232,0.9)';ctx.save();ctx.translate(np.x,np.y);ctx.rotate(np.rot);petalPath(ctx,np.s);ctx.fill();ctx.restore();petalInk(ctx,np.x,np.y,np.rot,np.s,RAW,1,1.1);ctx.restore();}
   // 过界的地方溅几点墨和钴料
   if(touch&&!whole&&mn<qx1&&mx>qx1){let best=p.sp[0];for(const q of p.sp)if(Math.abs(q.x-qx1)<Math.abs(best.x-qx1))best=q;const k=clamp(1-Math.abs((p.sp[0].x+p.sp[p.N].x)/2-qx1)/(p.L*0.8));
     if(k>0){const r2=rng(Math.floor(t*30));ctx.save();ctx.globalCompositeOperation='multiply';

@@ -51,19 +51,31 @@ function styleCode(t,cam,TR,p,clip){const pr=PROF.song,L=p.L;ctx.save();ctx.setT
   ctx.fillStyle='rgba(255,203,107,0.95)';p.sp.forEach((q,i)=>{if(i%2)return;ctx.beginPath();ctx.arc(q.x,q.y,(i%8?1.3:2.3)*lw*1.4,0,7);ctx.fill();});
   ctx.strokeStyle='rgba(130,170,255,0.7)';ctx.lineWidth=1*lw;for(let i=0;i<=p.N;i+=4){const q=p.sp[i];ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.lineTo(q.x+q.nx*L*0.06,q.y+q.ny*L*0.06);ctx.stroke();}
   const ey=bodyAt(p,pr,0.08,0.3);ctx.strokeStyle='rgba(127,219,202,0.9)';ctx.beginPath();ctx.arc(ey[0],ey[1],L*0.025,0,7);ctx.stroke();
-  ctx.font=`${(10*lw).toFixed(2)}px "DejaVu Sans Mono"`;ctx.fillStyle=`rgba(201,209,217,${0.75*la})`;const h=p.sp[0];ctx.textAlign='right';ctx.fillText('u=0',h.x-7*lw,h.y-3*lw);ctx.fillText(`L=${L.toFixed(1)}`,h.x-7*lw,h.y+10*lw);ctx.textAlign='left';const tl=p.sp[p.N];ctx.fillText('u=1',tl.x+4*lw,tl.y+12*lw);
-  // 活的读数：全是屏上那段代码里的变量（s、phase、I、wave），每一帧现算；再有一个探针沿着脊线来回扫
-  if(la>0.01&&p.s!==undefined){const N=p.N,I=p.I||0,TAU=2*Math.PI,ph=((p.ph%TAU)+TAU)%TAU;const waveAt=u=>L*(0.012+0.08*u*u)*I*Math.sin(TAU*0.9*u-p.ph);
+  ctx.font=`${(10*lw).toFixed(2)}px "DejaVu Sans Mono"`;ctx.textBaseline='alphabetic';
+  // 读数：每个数钉在它量的那个地方，用细线拉出来，跟着那一点动；鱼游进代码屏时，读数从鱼头这一侧开始一样一样跟着进来
+  if(la>0.01){const N=p.N,h=p.sp[0],tl=p.sp[N],I=p.I||0,TAU=2*Math.PI,ph0=p.ph||0,ph=((ph0%TAU)+TAU)%TAU;const waveAt=u=>L*(0.012+0.08*u*u)*I*Math.sin(TAU*0.9*u-ph0);
+    const sg=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(2);
+    const wOf=parts=>parts.reduce((a,[k,v])=>a+ctx.measureText(k).width+ctx.measureText(v).width,0);
+    const text=(parts,x,y,al)=>{for(const [k,v] of parts){ctx.fillStyle=`rgba(201,209,217,${0.6*al})`;ctx.fillText(k,x,y);x+=ctx.measureText(k).width;ctx.fillStyle=`rgba(247,140,108,${0.92*al})`;ctx.fillText(v,x,y);x+=ctx.measureText(v).width;}};
+    const callout=(ax,ay,lx,ly,parts,right,ring,k=1)=>{const al=la*k,w=wOf(parts),x0=right?lx-w:lx;ctx.lineWidth=0.9*lw;ctx.strokeStyle=`rgba(247,140,108,${0.36*al})`;
+      ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(lx,ly+3*lw);ctx.lineTo(right?x0:x0+w,ly+3*lw);ctx.stroke();
+      ctx.strokeStyle=ctx.fillStyle=`rgba(247,140,108,${0.9*al})`;ctx.beginPath();if(ring){ctx.arc(ax,ay,3.2*lw,0,7);ctx.stroke();}else{ctx.arc(ax,ay,1.5*lw,0,7);ctx.fill();}text(parts,x0,ly,al);};
+    let ymin=1e9,ymax=-1e9;for(const q of p.sp){ymin=Math.min(ymin,q.y);ymax=Math.max(ymax,q.y);}
+    // 鱼头前面一列：u、L，下面是整条鱼的 s、phase、I
+    ctx.textAlign='right';ctx.fillStyle=`rgba(201,209,217,${0.75*la})`;ctx.fillText('u=0',h.x-7*lw,h.y-3*lw);ctx.fillText(`L=${L.toFixed(1)}`,h.x-7*lw,h.y+10*lw);ctx.textAlign='left';
+    if(p.s!==undefined){const r1=[['s=',p.s.toFixed(1)]],r2=[['phase=',ph.toFixed(3)],['  I=',I.toFixed(3)]];text(r1,h.x-7*lw-wOf(r1),h.y+23*lw,la);text(r2,h.x-7*lw-wOf(r2),h.y+36*lw,la);}
+    // 鱼头：朝向和速度
     const hd=Math.atan2(p.sp[0].y-p.sp[3].y,p.sp[0].x-p.sp[3].x),th=((-hd*180/Math.PI)%360+360)%360;
-    const m=N>>1,qa=p.sp[m-3],qb=p.sp[m],qc=p.sp[m+3];let dk=Math.atan2(qc.y-qb.y,qc.x-qb.x)-Math.atan2(qb.y-qa.y,qb.x-qa.x);dk=Math.atan2(Math.sin(dk),Math.cos(dk));const kap=dk/((Math.hypot(qc.x-qa.x,qc.y-qa.y)/2)||1);
-    let xm=1e9,ym=-1e9;for(const q of p.sp){xm=Math.min(xm,q.x);ym=Math.max(ym,q.y);}ym+=L*0.2;
-    const sg=v=>(v>=0?'+':'\u2212')+Math.abs(v).toFixed(2);
-    const rows=[[['s=',p.s.toFixed(1)],['  v=',(p.spd||0).toFixed(1)],['  \u03b8=',th.toFixed(1)+'\u00b0']],[['phase=',ph.toFixed(3)],['  I=',I.toFixed(3)],['  \u03ba=',kap.toFixed(4)]],[['wave(1)=',sg(waveAt(1))]]];
-    ctx.textBaseline='alphabetic';rows.forEach((row,r)=>{let x=xm;const y=ym+(14+r*13)*lw;for(const [k,v] of row){ctx.fillStyle=`rgba(201,209,217,${0.6*la})`;ctx.fillText(k,x,y);x+=ctx.measureText(k).width;ctx.fillStyle=`rgba(247,140,108,${0.92*la})`;ctx.fillText(v,x,y);x+=ctx.measureText(v).width;}});
-    const pu=(t*0.38)%1,pq=spineAt(p,pu),lx=pq.x+10*lw,ly=Math.min(...p.sp.map(q=>q.y))-L*0.2-6*lw;
-    ctx.strokeStyle=`rgba(247,140,108,${0.9*la})`;ctx.lineWidth=1*lw;ctx.beginPath();ctx.arc(pq.x,pq.y,3.4*lw,0,7);ctx.stroke();
-    ctx.strokeStyle=`rgba(247,140,108,${0.35*la})`;ctx.beginPath();ctx.moveTo(pq.x,pq.y-3.4*lw);ctx.lineTo(pq.x+6*lw,ly+3*lw);ctx.lineTo(lx-2*lw,ly+3*lw);ctx.stroke();
-    let x=lx;for(const [k,v] of [['u=',pu.toFixed(3)],['  wave=',sg(waveAt(pu))]]){ctx.fillStyle=`rgba(201,209,217,${0.6*la})`;ctx.fillText(k,x,ly);x+=ctx.measureText(k).width;ctx.fillStyle=`rgba(247,140,108,${0.92*la})`;ctx.fillText(v,x,ly);x+=ctx.measureText(v).width;}}
+    callout(h.x,h.y,h.x-12*lw,h.y-30*lw,[['θ=',th.toFixed(1)+'°'],['  v=',(p.spd||0).toFixed(1)]],true,false);
+    // 身子中段：曲率
+    {const m=N>>1,qa=p.sp[m-3],qb=p.sp[m],qc=p.sp[m+3];let dk=Math.atan2(qc.y-qb.y,qc.x-qb.x)-Math.atan2(qb.y-qa.y,qb.x-qa.x);dk=Math.atan2(Math.sin(dk),Math.cos(dk));const kap=dk/((Math.hypot(qc.x-qa.x,qc.y-qa.y)/2)||1);
+     callout(qb.x,qb.y,qb.x-8*lw,ymax+L*0.14+12*lw,[['κ=',kap.toFixed(4)]],true,false);}
+    // 尾尖：读数跟着尾巴一起摆
+    callout(tl.x,tl.y,tl.x+14*lw,tl.y+20*lw,[['u=1  wave=',sg(waveAt(1))]],false,false);
+    // 探针：只在已经进了代码屏的那段脊线上来回扫，不会从尾巴跳回鱼头
+    {let f=1;if(t<MEDIA.s11.tIn)for(let i=0;i<=N;i++){if(p.sp[i].x>S11X+S11W/2){f=i/N;break;}}
+     const lo=0.06,hi=Math.min(0.9,f-0.04),k=clamp((hi-lo)/0.12);if(k>0){const pu=lo+(hi-lo)*(0.5-0.5*Math.cos(TAU*t/4.6)),pq=spineAt(p,pu);
+       callout(pq.x,pq.y,pq.x-8*lw,ymin-L*0.16-6*lw,[['u=',pu.toFixed(3)],['  wave=',sg(waveAt(pu))]],true,true,k);}}}
   ctx.restore();}
 // 每一站的样子在它身上闪一遍
 const FLASH_STYLES=()=>[styleBanpo,styleOBI,styleHan,styleBronze,styleCizhou,styleSong,styleYuanP,styleNian,stylePaper,styleMosaic,styleSignal];
