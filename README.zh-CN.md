@@ -6,7 +6,7 @@
 
 **一条鱼从六千年前的彩陶盆里游出来，一路游过十一件中国艺术品。<br>每碰到一件，它就变成那件作品里的样子。**
 
-[▶ 在线观看](https://fish6000.vercel.app) · [⬇ 下载 1080p 30 帧成片](../../releases/latest) · [更新记录](CHANGELOG.md) · [English](README.md)
+[▶ 在线观看](https://fish6000.vercel.app) · [⬇ 下载 1080p 30 帧成片](../../releases/latest) · [更新记录](CHANGELOG.zh-CN.md) · [English](README.md)
 
 </div>
 

@@ -1,5 +1,7 @@
 # Changelog
 
+English · [中文](CHANGELOG.zh-CN.md)
+
 ## [v1.2] — 2026-11-10
 
 - Keep the fish's color consistent as it settles onto the porcelain dish (1:17–1:18). It now takes on the dish's cobalt texture on contact, without overlapping fades.
