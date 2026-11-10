@@ -6,7 +6,7 @@
 
 **A fish swims out of a six-thousand-year-old painted pottery basin and through eleven works of Chinese art.<br>Whatever it touches, it becomes.**
 
-[⬇ Download the 1080p 30 fps film](../../releases/latest) · [中文](README.zh-CN.md)
+[▶ Watch online](https://fish6000.vercel.app) · [⬇ Download the 1080p 30 fps film](../../releases/latest) · [中文](README.zh-CN.md)
 
 </div>
 
