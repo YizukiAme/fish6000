@@ -1,7 +1,7 @@
 // ================= 捌 · 木版年画「连年有余」（清，仿） =================
 // 先只有墨线版：胖娃娃两手空空地抱着。主角游进他怀里补上那条鲤鱼，黄、红、绿、粉四块色版一版版压上去；鱼一扭，从怀里溜了
 const S8X=-4690,S8Y=0,S8W=420,PR8=180,MS8=3,P8=Math.ceil(2*PR8*MS8);
-const T8C=[103.85,104.2,104.55,104.9],T8SLIP=105.62;
+const T8C=[103.85,104.2,104.55,104.9],T8HOLD=[105.05,106.65],T8SLIP=107.22;   // 四块色版压完，整张画停一会儿（T8HOLD），鱼才溜
 const BLK=[{k:'yellow',col:[240,184,34],off:[1.3,-0.9]},{k:'red',col:[214,40,36],off:[-1.1,1.4]},{k:'green',col:[34,138,84],off:[1.7,1.1]},{k:'pink',col:[234,104,138],off:[-0.7,-1.5]}];
 const B8={};
 function b8k(t,i){return smooth(T8C[i]-0.02,T8C[i]+0.1,t);}
@@ -171,28 +171,31 @@ function drawPrint8(part,t){const cols={yellow:0,red:1,green:2,pink:3};const x0=
   ctx.save();ctx.globalAlpha=0.95;ctx.drawImage(ln,x0,y0,w,w);ctx.restore();}
 // 娃娃的开脸（杨柳青那种）：柳叶眉、丹凤眼、小鼻头、樱桃嘴；先看着怀里的鱼，鱼一溜，眉毛一挑、眼睛瞪圆、嘴张成个 o
 function face8(t,TR){const s=smooth(T8SLIP,T8SLIP+0.25,t);const look=smooth(101.8,103.2,t)*(1-s);
+  // 整张画印好了：笑开一点，眯一下眼（joy）；中间眨一下（bl）
+  const joy=smooth(T8HOLD[0]+0.1,T8HOLD[0]+0.6,t)*(1-s),bl=Math.max(smooth(105.86,105.94,t)*(1-smooth(105.98,106.1,t)),0)*(1-s);
   layerBegin(eb1,TR);eb1.translate(S8X,S8Y);eb1.fillStyle='#000';KW=1.3;const K=(ctrl,w,o)=>kline(eb1,ctrl,w,o);
   for(const dir of [-1,1]){const ex=dir<0?-28:16,ey=-87;
     const up0=[[ex-dir*9,ey+1],[ex-dir*2,ey-3.8],[ex+dir*6,ey-3.2],[ex+dir*11,ey-1.2]],up1=[[ex-dir*8,ey],[ex-dir*2,ey-6.8],[ex+dir*5,ey-6.2],[ex+dir*9,ey-0.6]];
     const lo0=[[ex-dir*8,ey+1.4],[ex,ey+3.6],[ex+dir*8.5,ey+0.8]],lo1=[[ex-dir*7.5,ey+1],[ex,ey+5.4],[ex+dir*8,ey]];
     const mix=(A,B)=>A.map((q,i)=>[lerp(q[0],B[i][0],s),lerp(q[1],B[i][1],s)]);
-    K(mix(up0,up1),2.7,{ti:0.15,to:0.3,sw:0.35,seed:31+dir});K(mix(lo0,lo1),1.0,{ti:0.25,to:0.3,seed:41+dir});
+    const lid=(A,dy)=>A.map((q,i)=>[q[0],q[1]+dy*(i===0||i===A.length-1?0.25:1)]);
+    K(lid(mix(up0,up1),0.9*joy+4.6*bl),2.7,{ti:0.15,to:0.3,sw:0.35,seed:31+dir});K(lid(mix(lo0,lo1),-1.1*joy),1.0,{ti:0.25,to:0.3,seed:41+dir});
     // 眼珠
-    const px=ex-1.8*look+dir*0.4*(1-s),py=ey-0.4+1.1*look;eb1.beginPath();eb1.arc(px,py,lerp(3.5,2.7,s),0,7);eb1.fill();
+    const px=ex-1.8*look+dir*0.4*(1-s),py=ey-0.4+1.1*look;if(bl<0.6){eb1.beginPath();eb1.ellipse(px,py,lerp(3.5,2.7,s),lerp(3.5,2.7,s)*(1-0.22*joy)*(1-bl),0,0,7);eb1.fill();}
     // 眉毛
     const br0=[[ex-dir*8,ey-12],[ex,ey-15.4],[ex+dir*9.5,ey-12.6]],br1=[[ex-dir*8,ey-18],[ex,ey-23],[ex+dir*9.5,ey-19]];K(mix(br0,br1),2.3,{ti:0.25,to:0.45,sw:0.3,seed:51+dir});}
   // 鼻头
   K([[-8,-80],[-5,-74.5],[-8.5,-72.5]],1.5,{ti:0.25,to:0.35,seed:61});
   // 嘴的墨线
-  if(s<0.5)K([[-11.5,-61.6],[-6,-60.8],[-0.5,-61.6]],1.05,{ti:0.25,to:0.25,seed:71});else K(arcPts(-6,-59,4.6,5.6,0,2*Math.PI,14),1.0,{ti:0.04,to:0.04,seed:72});
+  if(s<0.5)K([[-11.5-1.6*joy,-61.6-1.3*joy],[-6,-60.8+1.0*joy],[-0.5+1.6*joy,-61.6-1.3*joy]],1.05,{ti:0.25,to:0.25,seed:71});else K(arcPts(-6,-59,4.6,5.6,0,2*Math.PI,14),1.0,{ti:0.04,to:0.04,seed:72});
   KW=1;layerGrain(eb1,TR,0.14);layerColor(eb1,'rgb(28,22,20)');blitLayer(EB1,0.95);
   // 嘴的红（红版压下去以后才有）
   const rk=b8k(t,1);if(rk>0){layerBegin(eb1,TR);eb1.translate(S8X+BLK[1].off[0],S8Y+BLK[1].off[1]);eb1.fillStyle='#000';
-    if(s<0.5){eb1.beginPath();eb1.moveTo(-12,-61.5);eb1.quadraticCurveTo(-10,-65.2,-7.6,-64.2);eb1.quadraticCurveTo(-6,-63.4,-4.4,-64.2);eb1.quadraticCurveTo(-2,-65.2,0,-61.5);eb1.quadraticCurveTo(-6,-55.5,-12,-61.5);eb1.fill();}
+    if(s<0.5){const jx=1.6*joy,jy=1.3*joy;eb1.beginPath();eb1.moveTo(-12-jx,-61.5-jy);eb1.quadraticCurveTo(-10-jx*0.5,-65.2-jy*0.4,-7.6,-64.2);eb1.quadraticCurveTo(-6,-63.4,-4.4,-64.2);eb1.quadraticCurveTo(-2+jx*0.5,-65.2-jy*0.4,0+jx,-61.5-jy);eb1.quadraticCurveTo(-6,-55.5+1.4*joy,-12-jx,-61.5-jy);eb1.fill();}
     else{eb1.beginPath();eb1.ellipse(-6,-59,4.6,5.6,0,0,7);eb1.fill();}
     layerGrain(eb1,TR,0.12);layerColor(eb1,`rgb(${BLK[1].col})`);ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=0.92*rk;ctx.globalCompositeOperation='multiply';ctx.drawImage(EB1,0,0);ctx.restore();
     if(s>=0.5){layerBegin(eb1,TR);eb1.translate(S8X,S8Y);eb1.fillStyle='#000';eb1.beginPath();eb1.ellipse(-6,-58.4,2.4,3.4,0,0,7);eb1.fill();layerColor(eb1,'rgb(90,24,22)');blitLayer(EB1,0.85*rk);}}}
-const T8OWN=[101.35,107.25];
+const T8OWN=[101.35,108.85];
 function drawS8Panel(t,cam,TR){const x0=S8X-S8W/2,y0=S8Y-S8W/2;panelShadow(x0,y0,S8W,S8W);
   ctx.save();ctx.beginPath();ctx.rect(x0,y0,S8W,S8W);ctx.clip();ctx.drawImage(LINEN,0,0,840,840,x0,y0,S8W,S8W);ctx.globalCompositeOperation='multiply';ctx.fillStyle='rgb(150,42,36)';ctx.fillRect(x0,y0,S8W,S8W);ctx.globalCompositeOperation='source-over';
   ctx.save();ctx.shadowColor='rgba(30,10,8,0.45)';ctx.shadowBlur=14*cam.z;ctx.shadowOffsetY=5*cam.z;ctx.drawImage(B8.paper,S8X-PR8-8,S8Y-PR8-8,2*PR8+16,2*PR8+16);ctx.restore();
@@ -206,10 +209,12 @@ function styleNian(t,cam,TR,p,clip){if(clip){ctx.save();ctx.beginPath();ctx.rect
 STN.push({key:'s8',cx:S8X,hw:S8W/2,x0:-4980,x1:-4400,draw:drawS8Panel,owns:t=>t>=T8OWN[0]&&t<=T8OWN[1],drawHero:()=>{},style:styleNian,prep:prepNian});
 LABELS.push([S8X,S8W,S8W,'捌','连年有余','清 · 木版年画']);
 LIGHTS.push({x:S8X,y:-10,r:600,k:t=>smooth(98.8,100.8,t)});
-GK.push([101.0,-4490,10],[101.5,-4525,30],[102.0,-4582,40],[102.6,-4682,42],[103.0,-4745,40],[103.35,-4774,38.6],[103.7,-4782,38.3],[104.4,-4784,38.1],[105.1,-4785.5,38.0],[105.55,-4786.5,37.9],
-  [105.75,-4800,28],[105.95,-4822,6],[106.2,-4858,-22],[106.5,-4905,-40],[106.9,-4960,-42],[107.4,-5030,-34],[108.0,-5100,-22]);
-HL.push([101.2,150],[102.6,200],[107.4,200],[108.8,140]);
-HAMP.push(t=>(1-0.92*smooth(103.5,103.8,t)*(1-smooth(105.1,105.25,t)))*(1+1.6*smooth(105.15,105.3,t)*(1-smooth(105.7,106.3,t))));
-HFB.push(t=>3.0*smooth(105.15,105.3,t)*(1-smooth(105.8,106.4,t)));
+GK.push([101.0,-4490,10],[101.5,-4525,30],[102.0,-4582,40],[102.6,-4682,42],[103.0,-4745,40],[103.35,-4774,38.6],[103.7,-4782,38.3],[104.4,-4784,38.1],[105.2,-4784.6,38.05],[106.0,-4785.1,38.0],[106.7,-4785.5,38.0],[107.15,-4786.5,37.9],
+  [107.35,-4800,28],[107.55,-4822,6],[107.8,-4858,-22],[108.1,-4905,-40],[108.5,-4960,-42],[109.0,-5030,-34],[109.6,-5100,-22]);
+HL.push([101.2,150],[102.6,200],[109.0,200],[110.4,140]);
+// 被抱着的时候几乎不动；停留的那一会儿尾巴轻轻摆一下（它是活的），然后猛地一扭
+const flick8=t=>smooth(105.7,105.95,t)*(1-smooth(106.1,106.5,t));
+HAMP.push(t=>(1-0.92*smooth(103.5,103.8,t)*(1-smooth(106.7,106.85,t))*(1-0.62*flick8(t)))*(1+1.6*smooth(106.75,106.9,t)*(1-smooth(107.3,107.9,t))));
+HFB.push(t=>0.9*flick8(t)+3.0*smooth(106.75,106.9,t)*(1-smooth(107.4,108.0,t)));
 for(const tc of T8C)SHAKES.push([tc,2.5]);
-CK.push({t:101.2,x:S8X+60,y:0,z:1.55,f:0.4,ox:-40},{t:102.5,x:S8X+4,y:6,z:2.05},{t:105.5,x:S8X-4,y:4,z:2.15},{t:106.6,x:S8X-70,y:-20,z:1.6,f:0.4,ox:-60},{t:107.8,z:1.2,f:1,ox:-150,oy:-10});
+CK.push({t:101.2,x:S8X+60,y:0,z:1.55,f:0.4,ox:-40},{t:102.5,x:S8X+4,y:6,z:2.05},{t:105.1,x:S8X-2,y:5,z:2.13},{t:107.1,x:S8X-4,y:3,z:2.2},{t:108.2,x:S8X-70,y:-20,z:1.6,f:0.4,ox:-60},{t:109.4,z:1.2,f:1,ox:-150,oy:-10});

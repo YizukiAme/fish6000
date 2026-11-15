@@ -30,4 +30,4 @@ function mkSeal(o){const r=rng(o.seed||1);const S=o.size||420;const asp=o.aspect
     blob(x,px,py,S*(0.012+r()*0.03),Math.floor(r()*1e6));x.fill();}
   x.globalCompositeOperation='source-over';
   const out=mk(c.width,c.height);const ox=out.getContext('2d');ox.filter=`blur(${(S/420*0.7).toFixed(2)}px)`;ox.drawImage(c,0,0);return out;}
-function stampSeal(c,seal,x,y,w,al,rot){c.save();c.translate(x,y);c.rotate(rot||0);c.globalCompositeOperation='multiply';c.globalAlpha=al;const h=w*seal.height/seal.width;c.drawImage(seal,-w/2,-h/2,w,h);c.restore();}
+function stampSeal(c,seal,x,y,w,al,rot,comp){c.save();c.translate(x,y);c.rotate(rot||0);c.globalCompositeOperation=comp||'multiply';c.globalAlpha=al;const h=w*seal.height/seal.width;c.drawImage(seal,-w/2,-h/2,w,h);c.restore();}

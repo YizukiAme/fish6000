@@ -6,7 +6,7 @@ const heroAmp=t=>{let a=1;for(const f of HAMP)a*=f(t);return a;};
 const heroFB=t=>{let a=0;for(const f of HFB)a+=f(t);return a;};
 const T_LAST=GK[GK.length-1][0];
 const HERO={tr:makeTrackF(withHistory(t=>t<T_X-0.9?s1Circ(heroPhi(t)):HK(t),-8,PhiOf(-8)),-8,T_LAST+4,1/120,heroFB),L:heroL,winks:WINKS,amp:heroAmp,
-  stiff:t=>t>=108.5&&t<T9LIFT?0:(t>=T9LIFT&&t<T9LIFT+0.45?smooth(T9LIFT,T9LIFT+0.45,t):1)};
+  stiff:t=>t>=110.1&&t<T9LIFT?0:(t>=T9LIFT&&t<T9LIFT+0.45?smooth(T9LIFT,T9LIFT+0.45,t):1)};
 // 跨界时：只让鱼正要进去的那一站来画整条鱼。每一站在自己的材质外面画的都是上一站的样子，
 // 所以换站不会在空墙上留下接缝（以前两站各画一半，影子和抗锯齿在分界处会裂出一道竖线）
 function drawHeroWall(t,cam,TR,p){let mn=1e9,mx=-1e9;for(const q of p.sp){mn=Math.min(mn,q.x);mx=Math.max(mx,q.x);}mn-=p.L*0.4;mx+=p.L*0.4;

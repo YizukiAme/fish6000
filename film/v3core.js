@@ -227,7 +227,8 @@ function kilnFX(t,cam){const dark=smooth(32.4,33.0,t)*(1-smooth(36.8,37.8,t));le
   const sx=W/2+(PCX-cam.x)*cam.z,sy=H/2+(PCY-cam.y)*cam.z,sr=R*cam.z;const rev=smooth(36.8,38.2,t);
   ctx.save();
   if(rev<=0){ctx.fillStyle=`rgba(5,4,3,${0.94*dark})`;ctx.fillRect(0,0,W,H);}
-  else{const lx=sx-0.5*sr,ly=sy-0.6*sr;const rr=lerp(10,2800,rev);const g=ctx.createRadialGradient(lx,ly,rr*0.3,lx,ly,rr);g.addColorStop(0,'rgba(5,4,3,0)');g.addColorStop(1,`rgba(5,4,3,${0.94*dark})`);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+  else{const lx=sx-0.5*sr,ly=sy-0.6*sr;const rr=lerp(0.85*sr,2800,Math.pow(rev,1.5)),D=0.94*dark,c0=D*(1-smooth(0,0.3,rev));const g=ctx.createRadialGradient(lx,ly,0,lx,ly,rr);
+    for(let i=0;i<=8;i++){const v=i/8;g.addColorStop(v,`rgba(5,4,3,${(c0+(D-c0)*v*v*(3-2*v)).toFixed(4)})`);}ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
   if(heat>0.001){const hot=blackbody(heat),edge=blackbody(heat*0.75);
     const gg=ctx.createRadialGradient(sx-0.18*sr,sy-0.2*sr,sr*0.05,sx,sy,sr);gg.addColorStop(0,rgba(hot,heat));gg.addColorStop(0.75,rgba(mixA(hot,edge,0.6),heat));gg.addColorStop(1,rgba(edge,heat));ctx.fillStyle=gg;ctx.beginPath();ctx.arc(sx,sy,sr,0,7);ctx.fill();
     ctx.globalCompositeOperation='multiply';ctx.globalAlpha=0.16*heat;ctx.drawImage(COL,sx-260*cam.z,sy-260*cam.z,520*cam.z,520*cam.z);ctx.globalAlpha=1;

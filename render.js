@@ -12,6 +12,7 @@ const FFMPEG = process.env.FFMPEG || 'ffmpeg';
 const HTML = path.resolve(__dirname, process.env.SCENE || 'film.html');
 const argv = process.argv.slice(2);
 const opt = (k, d) => { const i = argv.indexOf(k); if (i < 0) return d; const v = argv[i + 1]; argv.splice(i, 2); return v; };
+const FILM_SECONDS = 171.4;   // 全片时长（和 film/main.js 里的 T_END 一致）
 const SCALE = +opt('--scale', 1), CRF = String(opt('--crf', 18)), PRESET = String(opt('--preset', 'veryfast'));
 
 async function openPage() {
@@ -67,7 +68,7 @@ async function encode(out, f0, f1, fps, tag, faststart) {
     const auto = Math.max(1, Math.min(8, Math.floor(os.cpus().length / 2)));
     const jobs = Math.max(1, +opt('--jobs', auto));
     const out = path.resolve(argv[0] || 'film_silent.mp4');
-    const dur = argv[1] !== undefined ? parseFloat(argv[1]) : 154.0 - from;
+    const dur = argv[1] !== undefined ? parseFloat(argv[1]) : FILM_SECONDS - from;
     const F0 = Math.round(from * fps), F1 = F0 + Math.round(dur * fps);
     const t0 = Date.now();
     console.log(`渲染 ${(F1 - F0)} 帧，${jobs} 路并行 → ${out}`);

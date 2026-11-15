@@ -12,7 +12,7 @@
 
 ---
 
-The film runs 2 minutes 34 seconds. It uses no image assets and no recorded sound.
+The film runs 2 minutes 51 seconds. It uses no image assets and no recorded sound.
 
 Every frame is drawn live by Canvas 2D code: the grit of the clay, the cracks in the turtle shell, the ink bloom of a stone rubbing, the weave of silk, the cobalt of blue-and-white porcelain, the frayed edge of cut paper. The score is synthesized sample by sample in Python.
 
@@ -63,6 +63,7 @@ The full options, how to regenerate the score, which file draws which station, a
 - **The fish is a swinging spine.** It follows a path through keyframes. Its body is a chain of joints laid along the path it has just swum, and fins, scales and tail grow from that spine. All eleven styles share the same skeleton.
 - **It becomes what it touches.** Each artwork has an outline. The part of the fish inside it takes the new style; the part outside keeps the old one. The change starts at the point of contact and spreads along the body.
 - **The sound is computed too.** `score_full.py` synthesizes every note and splash with NumPy and places each one on the picture's timeline.
+- **The score is one melody.** Its skeleton is ten notes inside one five-note scale. Each station plays it on a different instrument and in a different mode, and ornaments it the way that instrument would: clay ocarina, stone chimes, panpipes, bronze bells, bamboo flute, guqin, pipa, suona, banhu, chiptune. The fish works the same way: the spine stays, the drawing changes. In the code station, the ten `drawXxx` lines play the bare skeleton one note per line, and the finale plays it whole.
 
 ## License
 

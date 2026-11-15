@@ -90,7 +90,7 @@ def thump(amp=0.12):
 # ---------- 石磬：石头的金属感，不和谐泛音 ----------
 def qing(p, amp=0.16, dur=4.5):
     f = F(p); n = int(dur * SR); t = tv(n); y = np.zeros(n)
-    for r, a, d in [(1, 1, 2.6), (2.32, 0.55, 1.1), (4.25, 0.3, 0.5), (6.63, 0.18, 0.22), (9.4, 0.08, 0.12)]:
+    for r, a, d in [(1, 1, 2.6), (2.667, 0.5, 1.1), (4.5, 0.22, 0.5), (6.0, 0.16, 0.22), (9.4, 0.06, 0.12)]:   # 泛音落在四度、九度、五度上：还是石头的声音，但不跟五声音阶打架
         y += a * np.sin(2 * np.pi * f * r * t + rng.random() * 6.28) * np.exp(-t / d)
     y *= 1 - np.exp(-t / 0.0015); y += hp(rng.standard_normal(n), 3000) * np.exp(-t / 0.006) * 0.3
     return norm(y, amp)
@@ -177,10 +177,10 @@ def jiangu(amp=0.25, f0=58, dec=0.6):
     y += lowpass(rng.standard_normal(n), 10) * np.exp(-t / 0.02) * 0.6
     return norm(y, amp)
 # ---------- 编钟：双音、带拍频的铜声 ----------
-def bell(p, amp=0.16, dur=5.0):
+def bell(p, amp=0.16, dur=5.0, damp=1.0):
     f = F(p); n = int(dur * SR); t = tv(n); y = np.zeros(n)
     for r, a, d in [(1.0, 1.0, 3.2), (1.0035, 0.7, 3.0), (1.19, 0.45, 1.8), (2.0, 0.5, 1.4), (2.76, 0.3, 0.8), (3.42, 0.22, 0.5), (4.1, 0.14, 0.32), (5.4, 0.08, 0.18)]:
-        y += a * np.sin(2 * np.pi * f * r * t + rng.random() * 6.28) * np.exp(-t / d)
+        y += a * np.sin(2 * np.pi * f * r * t + rng.random() * 6.28) * np.exp(-t / (d * damp))
     y *= 1 - np.exp(-t / 0.002)
     y += hp(rng.standard_normal(n), 2500) * np.exp(-t / 0.004) * 0.25
     return norm(y, amp)
@@ -366,3 +366,64 @@ def pad(notes, dur, amp=0.1, att=1.5, rel=2.0, detune=0.0035):
     env = np.clip(t / att, 0, 1) ** 2 * np.clip((dur - t) / rel, 0, 1)
     y = lp(y * env, 2000)
     return norm(y, amp)
+
+# ================= 第二版配乐（全片一条主题）新加的乐器 =================
+# 洞箫：比埙亮一点、比笛子暗，气息长
+def xiao_phrase(notes, amp=0.12, vib=0.1, rel=0.45):
+    return xun_phrase(notes, amp=amp, vib=vib, breath=0.1, port=0.08, scoop=0.3, over=0.22, rel=rel, att=0.14)
+# 连弓的拉弦：音与音之间带滑音，长音上揉弦。板胡亮，二胡暖
+BANHU_F = ((1100, 400, 1.2), (2600, 600, 1.6), (3600, 700, 0.8))
+ERHU_F = ((700, 300, 1.4), (1500, 450, 0.9))
+def bowed_phrase(notes, amp=0.1, port=0.07, vib=0.22, formants=BANHU_F, att=0.05, rel=0.15, cut=None, scoop=0.5):
+    T = notes[-1][0] + notes[-1][1] + rel; n = int(T * SR); t = tv(n)
+    s = np.full(n, float(midi(notes[0][2])))
+    for i in range(1, len(notes)):
+        t0 = notes[i][0]; a = midi(notes[i - 1][2]); b = midi(notes[i][2]); w = np.clip((t - t0 + port * 0.5) / port, 0, 1); s += (b - a) * w * w * (3 - 2 * w)
+    vb = np.zeros(n)
+    for i, (t0, d, p) in enumerate(notes):
+        m = (t >= t0) & (t < t0 + d + (rel if i == len(notes) - 1 else 0)); tt = t[m] - t0
+        vb[m] = vib * np.clip((tt - 0.16) / 0.25, 0, 1) * np.sin(2 * np.pi * 5.7 * tt)
+    s = s + vb - scoop * np.exp(-t / 0.04)
+    f = 440 * 2 ** ((s - 69) / 12); ph = 2 * np.pi * np.cumsum(f) / SR
+    y = np.zeros(n)
+    for k in range(1, 16):
+        fk = f * k
+        g = 1 + sum(gn * np.exp(-((fk - fc) / bw) ** 2) for fc, bw, gn in formants)
+        y += (1 / k) * g * np.sin(k * ph + rng.random() * 6.28) * (fk < 9000)
+    env = np.clip(t / att, 0, 1) * np.clip((T - t) / rel, 0, 1)
+    for t0, d, p in notes[1:]: env *= 1 - 0.22 * np.exp(-((t - t0) / 0.018) ** 2)
+    y = y * env + lowpass(rng.standard_normal(n), 40) * env * 0.04 * np.max(np.abs(y))
+    if cut: y = lp(y, cut)
+    return norm(y, amp)
+def banhu_legato(notes, amp=0.1, **kw): return bowed_phrase(notes, amp=amp, formants=BANHU_F, **kw)
+def erhu_phrase(notes, amp=0.1, **kw):
+    kw.setdefault('att', 0.09); kw.setdefault('rel', 0.3); kw.setdefault('port', 0.09); kw.setdefault('cut', 3600)
+    return bowed_phrase(notes, amp=amp, formants=ERHU_F, **kw)
+# 琵琶：一下弹出去；长音可以接着轮指（roll = 轮多久）
+def pipa(note, amp=0.12, dur=2.0, roll=0.0):
+    f = F(note); n = int((max(roll, 0.0) + dur) * SR); y = np.zeros(n)
+    p = lute_pluck(f, 1.0, dur); y[:len(p)] += p[:n]
+    tt = 0.105
+    while tt < roll:
+        q = lute_pluck(f, 0.4 + 0.12 * rng.random(), 0.5); i = int(tt * SR); m = min(len(q), n - i); y[i:i + m] += q[:m]
+        tt += (1 / 14.5) * (0.92 + 0.16 * rng.random())
+    y = lp(lp(y, 2600), 3800)
+    return norm(y, amp)
+
+# 编钟（第二版）：原来那口钟带一个小三度的泛音，敲 D 会带出 F，跟全片的五声音列打架；这里换成五度和十二度，留一点金属的不谐和在高处
+def zhong(p, amp=0.16, dur=5.0, damp=1.0):
+    f = F(p); n = int(dur * SR); t = tv(n); y = np.zeros(n)
+    for r, a, d in [(1.0, 1.0, 3.2), (1.0035, 0.7, 3.0), (1.5, 0.2, 1.6), (2.0, 0.5, 1.4), (2.76, 0.13, 0.6), (3.0, 0.2, 0.6), (4.1, 0.09, 0.3), (5.4, 0.05, 0.18)]:
+        y += a * np.sin(2 * np.pi * f * r * t + rng.random() * 6.28) * np.exp(-t / (d * damp))
+    y *= 1 - np.exp(-t / 0.002)
+    y += hp(rng.standard_normal(n), 2500) * np.exp(-t / 0.004) * 0.25
+    return norm(y, amp)
+
+# 总线上的限幅：只碰全片最高的那几个峰（提前 4 毫秒压下去，慢慢放开），整体响度就能多出一点
+def soft_limit(L, R, rel_thr=0.87, look=0.004, release=0.12):
+    from scipy.ndimage import maximum_filter1d, minimum_filter1d, uniform_filter1d
+    pk = np.maximum(np.abs(L), np.abs(R)); thr = rel_thr * pk.max(); k = int(look * SR)
+    g = np.minimum(1.0, thr / np.maximum(maximum_filter1d(pk, size=2 * k + 1), 1e-9))
+    g = uniform_filter1d(minimum_filter1d(g, size=int(release * SR)), size=2 * k + 1)
+    print('limiter: %.2f%% of samples touched, max reduction %.1f dB' % (100 * np.mean(g < 0.999), -20 * np.log10(g.min())))
+    return L * g, R * g

@@ -2,6 +2,16 @@
 
 English · [中文](CHANGELOG.zh-CN.md)
 
+## [v1.3] — 2026-11-15
+
+- Rework the Cizhou scene: the fish pauses while dry-brush strokes, carved scales, weeds, and the final eye bring it to life, with a gentle camera push-in.
+- Match the porcelain fish's glazed silhouette to its fins, refine the highlights, and soften its departure from the dish.
+- Hold on the finished New Year print as the child smiles and blinks before the fish slips away.
+- Extend the paper-cut sequence to show the outline and interior details being cut, with the scissors following each stage before the paper unfolds.
+- Rebuild the code station as an editor: each completed drawing call restores one of the fish's earlier styles, then the render loop leads into the finale.
+- Recompose the score around a shared ten-note theme, with different instruments and ornamentation at each station and notes timed to the code's drawing calls.
+- Extend the film to 2:51.4, update chapter timings, and refresh the cover, station montage, and documentation.
+
 ## [v1.2] — 2026-11-10
 
 - Keep the fish's color consistent as it settles onto the porcelain dish (1:17–1:18). It now takes on the dish's cobalt texture on contact, without overlapping fades.
@@ -30,3 +40,5 @@ English · [中文](CHANGELOG.zh-CN.md)
 [v1.2]: https://github.com/YizukiAme/fish6000/compare/v1.1...v1.2
 [v1.1]: https://github.com/YizukiAme/fish6000/compare/v1.0...v1.1
 [v1.0]: https://github.com/YizukiAme/fish6000/releases/tag/v1.0
+
+[v1.3]: https://github.com/YizukiAme/fish6000/compare/v1.2...v1.3
