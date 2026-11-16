@@ -2,6 +2,12 @@
 
 [English](CHANGELOG.md) · 中文
 
+## [v1.6] — 2026-11-16
+
+- 代码鱼恢复骨架时，实时参数从鱼头到鱼尾依次重新出现。
+- 让鱼带着参数从画面左侧游出，在画面外收起读数并掉头。
+- 镜头拉远时，鱼以骨架形态从左侧返回，继续游入终章大鱼的眼睛。
+
 ## [v1.5] — 2026-11-16
 
 - 在甲骨裂开后、铜洗三鱼并排时加入短暂停留，烟雾和双鱼的反应继续自然展开。
@@ -64,3 +70,5 @@
 [v1.4]: https://github.com/YizukiAme/fish6000/compare/v1.3...v1.4
 
 [v1.5]: https://github.com/YizukiAme/fish6000/compare/v1.4...v1.5
+
+[v1.6]: https://github.com/YizukiAme/fish6000/compare/v1.5...v1.6

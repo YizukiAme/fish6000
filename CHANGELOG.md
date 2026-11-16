@@ -2,6 +2,12 @@
 
 English · [中文](CHANGELOG.zh-CN.md)
 
+## [v1.6] — 2026-11-16
+
+- Restore the code fish's live readings from head to tail as the skeletal drawing returns.
+- Send the fish off the left edge with its readings, then hide them while it turns offscreen.
+- Bring the bare skeleton back from the left as the camera pulls out, continuing into the eye of the final fish-shaped display.
+
 ## [v1.5] — 2026-11-16
 
 - Add brief holds after the oracle-bone crack and when the three fish meet in the bronze basin, while smoke and the twin fish's reactions continue.
@@ -64,3 +70,5 @@ English · [中文](CHANGELOG.zh-CN.md)
 [v1.4]: https://github.com/YizukiAme/fish6000/compare/v1.3...v1.4
 
 [v1.5]: https://github.com/YizukiAme/fish6000/compare/v1.4...v1.5
+
+[v1.6]: https://github.com/YizukiAme/fish6000/compare/v1.5...v1.6

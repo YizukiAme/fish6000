@@ -7,6 +7,7 @@ const T11IN=137.4,T11CAP=[138.6,142.5],T11CAP2=[146.3,150.9];
 const TK=[144.30,145.08,145.82,146.52,147.18,147.80,148.38,148.93,149.45,149.95];   // 十行 drawXxx 各自打完的时刻：鱼在这一刻换画法
 const TSKIN=[...TK,TK[9]+0.3],TSKIN_END=TK[9]+0.8,WIPE11=0.2;                        // 像素那一行连着两种（1980 的马赛克 → 2026）；最后换回骨架
 const T11LOOP=150.95,T11RUN=151.95,T11BACK=[152.5,157.0],T_FIN=164.0;                // 打最后一行；它跑起来；镜头拉远；全片转黑
+const T11HUDCUT=153.9;                                                                   // 读数收掉的时刻：这时鱼正在画面外（左边）
 const CODE=[
  ['c','// 一条鱼：一条走过的路，加一根会摆的脊线'],
  ['k','function ','f','fishPose','p','(def, t) {'],
@@ -71,8 +72,10 @@ function drawS11Panel(t,cam,TR){const x0=S11X-S11W/2,y0=S11Y-S11W/2;panelShadow(
 // 骨架：脊线、采样点、轮廓、肋线。o.alpha 整体透明度；o.bare 只画骨架、不带读数
 function styleCode(t,cam,TR,p,clip,o){const pr=PROF.song,L=p.L,ga=o&&o.alpha!==undefined?o.alpha:1;ctx.save();ctx.setTransform(...TR);if(clip){ctx.beginPath();ctx.rect(...clip);ctx.clip();}ctx.globalAlpha=ga;
   const z=cam.z;const lw=z>=1?1/z:Math.pow(z,-0.5);const e=edges(p,pr);
-  // 读数：从游进屏里一直带到开始换画法；之后收起来，掉头、窜出去的时候只剩干净的骨架
-  const la=o&&o.bare?0:smooth(0.75,1.15,z)*(1-smooth(TK[0]-0.3,TK[0]-0.05,t));
+  // 读数：从游进屏里一直带到开始换画法；换画法时收起来；换回骨架时，跟着那道刷过去的竖线，从鱼头到鱼尾一样一样回来。
+  // 最后一行跑起来，鱼带着这一堆读数从屏的左边窜出画面；在画面外收掉（镜头拉远、字小到看不清，也就收了）——它掉头回来的时候只剩骨架
+  const la=o&&o.bare?0:smooth(0.75,1.15,z)*(1-smooth(T11HUDCUT,T11HUDCUT+0.05,t));
+  const hk=u=>t<TSKIN_END?1-smooth(TK[0]-0.3,TK[0]-0.05,t):smooth(TSKIN_END+WIPE11*u,TSKIN_END+WIPE11*u+0.3,t);   // 读数里钉在鱼身 u 处的那一个
   const pass=(col,w)=>{ctx.strokeStyle=col;ctx.lineWidth=w*lw;
     ctx.beginPath();e.top.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));for(let i=e.M;i>=0;i--)ctx.lineTo(e.bot[i][0],e.bot[i][1]);ctx.closePath();ctx.stroke();
     for(let k=1;k<10;k++){const u=k/10*0.8;const a=bodyAt(p,pr,u,1),b=bodyAt(p,pr,u,-1);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();}
@@ -93,20 +96,20 @@ function styleCode(t,cam,TR,p,clip,o){const pr=PROF.song,L=p.L,ga=o&&o.alpha!==u
       ctx.strokeStyle=ctx.fillStyle=`rgba(247,140,108,${0.9*al})`;ctx.beginPath();if(ring){ctx.arc(ax,ay,3.2*lw,0,7);ctx.stroke();}else{ctx.arc(ax,ay,1.5*lw,0,7);ctx.fill();}text(parts,x0,ly,al);};
     let ymin=1e9,ymax=-1e9;for(const q of p.sp){ymin=Math.min(ymin,q.y);ymax=Math.max(ymax,q.y);}
     // 鱼头前面一列：u、L，下面是整条鱼的 s、phase、I
-    ctx.textAlign='right';ctx.fillStyle=`rgba(201,209,217,${0.75*la})`;ctx.fillText('u=0',h.x-7*lw,h.y-3*lw);ctx.fillText(`L=${L.toFixed(1)}`,h.x-7*lw,h.y+10*lw);ctx.textAlign='left';
-    if(p.s!==undefined){const r1=[['s=',p.s.toFixed(1)]],r2=[['phase=',ph.toFixed(3)],['  I=',I.toFixed(3)]];text(r1,h.x-7*lw-wOf(r1),h.y+23*lw,la);text(r2,h.x-7*lw-wOf(r2),h.y+36*lw,la);}
+    const a0=la*hk(0);ctx.textAlign='right';ctx.fillStyle=`rgba(201,209,217,${0.75*a0})`;ctx.fillText('u=0',h.x-7*lw,h.y-3*lw);ctx.fillText(`L=${L.toFixed(1)}`,h.x-7*lw,h.y+10*lw);ctx.textAlign='left';
+    if(p.s!==undefined){const r1=[['s=',p.s.toFixed(1)]],r2=[['phase=',ph.toFixed(3)],['  I=',I.toFixed(3)]];text(r1,h.x-7*lw-wOf(r1),h.y+23*lw,a0);text(r2,h.x-7*lw-wOf(r2),h.y+36*lw,a0);}
     // 鱼头：朝向和速度
     const hd=Math.atan2(p.sp[0].y-p.sp[3].y,p.sp[0].x-p.sp[3].x),th=((-hd*180/Math.PI)%360+360)%360;
-    callout(h.x,h.y,h.x-12*lw,h.y-30*lw,[['θ=',th.toFixed(1)+'°'],['  v=',(p.spd||0).toFixed(1)]],true,false);
+    callout(h.x,h.y,h.x-12*lw,h.y-30*lw,[['θ=',th.toFixed(1)+'°'],['  v=',(p.spd||0).toFixed(1)]],true,false,hk(0));
     // 身子中段：曲率
     {const m=N>>1,qa=p.sp[m-3],qb=p.sp[m],qc=p.sp[m+3];let dk=Math.atan2(qc.y-qb.y,qc.x-qb.x)-Math.atan2(qb.y-qa.y,qb.x-qa.x);dk=Math.atan2(Math.sin(dk),Math.cos(dk));const kap=dk/((Math.hypot(qc.x-qa.x,qc.y-qa.y)/2)||1);
-     callout(qb.x,qb.y,qb.x-8*lw,ymax+L*0.14+12*lw,[['κ=',kap.toFixed(4)]],true,false);}
+     callout(qb.x,qb.y,qb.x-8*lw,ymax+L*0.14+12*lw,[['κ=',kap.toFixed(4)]],true,false,hk(0.5));}
     // 尾尖：读数跟着尾巴一起摆
-    callout(tl.x,tl.y,tl.x+14*lw,tl.y+20*lw,[['u=1  wave=',sg(waveAt(1))]],false,false);
+    callout(tl.x,tl.y,tl.x+14*lw,tl.y+20*lw,[['u=1  wave=',sg(waveAt(1))]],false,false,hk(1));
     // 探针：只在已经进了代码屏的那段脊线上来回扫，不会从尾巴跳回鱼头
     {let f=1;if(t<MEDIA.s11.tIn)for(let i=0;i<=N;i++){if(p.sp[i].x>S11X+S11W/2){f=i/N;break;}}
      const lo=0.06,hi=Math.min(0.9,f-0.04),k=clamp((hi-lo)/0.12);if(k>0){const pu=lo+(hi-lo)*(0.5-0.5*Math.cos(TAU*t/4.6)),pq=spineAt(p,pu);
-       callout(pq.x,pq.y,pq.x-8*lw,ymin-L*0.16-6*lw,[['u=',pu.toFixed(3)],['  wave=',sg(waveAt(pu))]],true,true,k);}}}
+       callout(pq.x,pq.y,pq.x-8*lw,ymin-L*0.16-6*lw,[['u=',pu.toFixed(3)],['  wave=',sg(waveAt(pu))]],true,true,k*hk(pu));}}}
   ctx.restore();}
 // 十行 drawXxx 对应的画法（像素那一行连着两种）。换的时候从鱼头往鱼尾刷过去：一道竖线扫过，线前面是旧画法，线后面是新画法；
 // 每换一次，骨架在新画法上面亮一下再隐去——还是同一根脊线
@@ -199,10 +202,13 @@ FISHL={k:t=>0.78*smooth(TG0+0.4,TG1-0.4,t),path:(c,t)=>{const P=(x,y)=>[FC[0]+x,
   extra:(c,t)=>{const k=0.62*smooth(TG1+0.1,TG1+1.0,t);if(k<=0.001)return;c.fillStyle=`rgba(255,248,236,${k.toFixed(4)})`;c.beginPath();c.ellipse(FC[0]+1640,FC[1]-1150,340,490,0,0,7);c.fill();}};
 LINES.push([T11CAP[0],T11CAP[1],['这一站','是代码画的'],1680,330]);
 LINES.push([T11CAP2[0],T11CAP2[1],['前面十站','也是'],1680,330]);
-// 路线：从右边游进代码屏，沉到屏的下半边（上半边留给代码），慢慢往左漂。打最后一行的时候它在代码下面的空处掉过头来；
-// 那一行一跑起来，它就从屏的右边窜出去，朝大鱼的眼睛游——全程不从代码上面穿过；它比镜头先走半步，镜头拉远的时候一直在画面里
+// 路线：从右边游进代码屏，沉到屏的下半边（上半边留给代码），慢慢往左漂——全程不从代码上面穿过。
+// 最后一行一跑起来，它带着那一堆读数，从屏的左边窜出画面；镜头往右拉远，它在画面外掉头追上来，读数这时收掉了；
+// 等镜头拉远到停住，它从画面左边游回来，只剩骨架，一直游进大鱼的眼睛
 GK.push([137.4,-6400,22],[138.2,-6492,74],[139.0,-6556,118],[140.0,-6600,136],[141.5,-6640,143],[143.5,-6682,146],[146.0,-6732,145],[148.5,-6782,143],[150.6,-6822,140],
-  [151.0,-6836,141],[151.5,-6866,158],[151.9,-6876,186],[152.25,-6850,214],[152.6,-6790,223],[153.0,-6650,200],[153.4,-6440,110],[153.8,-6180,-60],[154.2,-5930,-250],[154.6,-5700,-400],[155.2,-5470,-492],[155.9,-5300,-480],[156.5,-5180,-455]);
+  [151.0,-6836,140],[151.5,-6856,139],[T11RUN,-6880,136],[152.25,-6925,131],[152.55,-6990,121],[152.85,-7075,104],[153.15,-7165,78],
+  [153.45,-7230,38],[153.75,-7245,-15],[154.05,-7200,-75],[154.35,-7080,-140],[154.65,-6880,-210],[154.95,-6620,-280],[155.25,-6330,-340],[155.55,-6040,-390],[155.85,-5770,-425],
+  [156.15,-5530,-448],[156.45,-5340,-458],[156.75,-5190,-452]);
 {const ex=FC[0]+EYE_REL[0],ey=FC[1]+EYE_REL[1];for(let i=1;i<16;i++){const th=Math.PI-i*Math.PI/2;GK.push([TG1+0.1+0.62*(i-1),ex+58*Math.cos(th),ey+58*Math.sin(th)]);}}
 HL.push([136.6,140],[138.0,150],[153.2,150],[156.2,112]);
 // 在代码屏里游得慢，尾巴摆得稍微有劲一点，各种画法才看得出是活的
