@@ -521,9 +521,9 @@ one(qin('D3', 0.17, 7.0, vib=0.1), 'qin', nt(14), 'D3', 2.0, -0.1); one(zhong('D
 one(fan('A5', 0.045, 5.0), 'fan', nt(14) + 1.15, 'A5', 0.6, 0.2)
 # 最老的那支埙留到最后：还是开头那个五度，往上一挑，不落下来——鱼还在游
 phrase(xun_phrase, 'xun', nt(14) + 1.3, [(0, 1.0, 'D4'), (1.0, 2.3, 'A4')], pan=0.05, amp=0.1, vib=0.12, rel=0.9)
-tr.add(thump(0.06), T_FIN + 0.3, 0.0)     # 黑卡上的印
+tr.add(thump(0.06), T_FIN + 0.3, 0.0)     # 黑卡：片名和印一起浮出来，这一下让它落定
 # 逗号活过来：一滴水的轻响，一下小小的摆尾，往左游走
-tr.add(drop(0.05, 740), T_FIN + 1.15, -0.1); tr.add(swish(0.02, 0.3, hi=True), T_FIN + 1.5, -0.3); one(fan('A5', 0.05, 4.0), 'fan', T_FIN + 1.2, 'A5', 0.6, -0.2)
+tr.add(drop(0.05, 740), T_FIN + 1.55, -0.1); tr.add(swish(0.02, 0.3, hi=True), T_FIN + 1.9, -0.3); one(fan('A5', 0.05, 4.0), 'fan', T_FIN + 1.6, 'A5', 0.6, -0.2)   # 和画面里的 tc 一起挪
 
 tq = W5(WE(tv(trA.N))); src = 1 - np.clip((tq - T10OFF) / 0.015, 0, 1); trA.L *= src; trA.R *= src
 AL, AR = mixdown(trA, wet=0.42, ir_dur=3.4, ir_dec=0.95)

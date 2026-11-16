@@ -2,6 +2,13 @@
 
 English · [中文](CHANGELOG.zh-CN.md)
 
+## [v1.7] — 2026-11-16
+
+1. Fade the title and seal in together on the closing black card, removing the separate stamping motion.
+2. Delay the comma fish's awakening by 0.4 seconds, giving the title more reading time.
+3. Slightly shorten the fish's departure and delay the title fade-out.
+4. Shift the water drop, tail swish, and harmonic to match the revised animation.
+
 ## [v1.6] — 2026-11-16
 
 - Restore the code fish's live readings from head to tail as the skeletal drawing returns.
@@ -72,3 +79,5 @@ English · [中文](CHANGELOG.zh-CN.md)
 [v1.5]: https://github.com/YizukiAme/fish6000/compare/v1.4...v1.5
 
 [v1.6]: https://github.com/YizukiAme/fish6000/compare/v1.5...v1.6
+
+[v1.7]: https://github.com/YizukiAme/fish6000/compare/v1.6...v1.7

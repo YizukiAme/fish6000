@@ -2,6 +2,13 @@
 
 [English](CHANGELOG.md) · 中文
 
+## [v1.7] — 2026-11-16
+
+1. 片尾黑卡的片名与印章同时淡入，取消单独盖印的动作。
+2. 将逗号鱼的苏醒延后 0.4 秒，为片名留出更多阅读时间。
+3. 略微缩短逗号鱼游离的过程，延后片名淡出。
+4. 同步调整水滴、摆尾和泛音的时机。
+
 ## [v1.6] — 2026-11-16
 
 - 代码鱼恢复骨架时，实时参数从鱼头到鱼尾依次重新出现。
@@ -72,3 +79,5 @@
 [v1.5]: https://github.com/YizukiAme/fish6000/compare/v1.4...v1.5
 
 [v1.6]: https://github.com/YizukiAme/fish6000/compare/v1.5...v1.6
+
+[v1.7]: https://github.com/YizukiAme/fish6000/compare/v1.6...v1.7

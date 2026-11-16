@@ -137,13 +137,13 @@ function commaFish(c,p,k,col){const L=p.L,M=40,top=[],bot=[];
   c.fillStyle=col;c.beginPath();top.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));for(let i=M;i>=0;i--)c.lineTo(bot[i][0],bot[i][1]);c.closePath();c.fill();
   if(k>0.02){const tp=spineAt(p,1),pre=spineAt(p,0.9),f=k*L;c.beginPath();c.moveTo(top[32][0],top[32][1]);c.lineTo(tp.x+tp.nx*f*0.2,tp.y+tp.ny*f*0.2);c.lineTo(tp.x+(tp.x-pre.x)*0.5*k,tp.y+(tp.y-pre.y)*0.5*k);c.lineTo(tp.x-tp.nx*f*0.19,tp.y-tp.ny*f*0.19);c.lineTo(bot[32][0],bot[32][1]);c.closePath();c.fill();}}
 function drawFinale(t){const a=smooth(T_FIN-1.1,T_FIN,t);if(a<=0)return;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle=`rgba(8,8,9,${Math.min(1,a*1.2)})`;ctx.fillRect(0,0,W,H);
-  const b=smooth(T_FIN-0.2,T_FIN+0.6,t)*(1-smooth(T_FIN+3.1,T_FIN+3.7,t));if(b<=0){ctx.restore();return;}
+  const b=smooth(T_FIN-0.2,T_FIN+0.6,t)*(1-smooth(T_FIN+3.3,T_FIN+3.85,t));if(b<=0){ctx.restore();return;}
   ctx.globalAlpha=b;ctx.textAlign='left';ctx.fillStyle='#e8e0d2';ctx.font=`600 54px ${SERIF}`;ctx.letterSpacing='9px';
   const wA=ctx.measureText(TITLE_A).width,wB=ctx.measureText('，').width,wC=ctx.measureText(TITLE_C).width;const x0=W/2-(wA+wB+wC)/2,base=H/2+12;
   ctx.fillText(TITLE_A,x0,base);ctx.fillText(TITLE_C,x0+wA+wB,base);
   // 逗号：先是一个逗号。它其实就是一条蜷着的小鱼——圆头、细尾巴弯下去；
   // 先换成同样形状的"逗号鱼"（看不出换了），尾巴一抖醒过来，身子舒展开、头转向左边，然后越游越快，游出画面
-  const tc=T_FIN+1.15,dot=[x0+wA+8,base-4],d=t-tc;
+  const tc=T_FIN+1.55,dot=[x0+wA+8,base-4],d=t-tc;   // 逗号醒过来：片名和印亮足以后先停一秒，让人把字读完
   const L0=17,ang0=-Math.PI/2,cv0=-0.12;const P00=procPose(0,0,ang0,L0,cv0,0,0,t).sp[0];const C0=[dot[0]-P00.x,dot[1]-P00.y];
   const cf=smooth(-0.12,0,d);
   if(cf<1){ctx.save();ctx.globalAlpha=b*(1-cf);ctx.fillText('，',x0+wA,base);ctx.restore();}
@@ -151,7 +151,7 @@ function drawFinale(t){const a=smooth(T_FIN-1.1,T_FIN,t);if(a<=0)return;ctx.save
     // 醒过来时一圈细细的涟漪
     if(d>0&&d<1.4){for(const dl of [0,0.22]){const q=d-dl;if(q<=0)continue;ctx.save();ctx.globalAlpha=b*0.27*Math.pow(Math.max(0,1-q/1.15),1.3);ctx.strokeStyle='#e8e0d2';ctx.lineWidth=1;const rr=4+54*(1-Math.exp(-3.4*q));ctx.beginPath();ctx.ellipse(C0[0],C0[1]+3,rr,rr*0.32,0,0,7);ctx.stroke();ctx.restore();}}
     const k=smooth(0.02,0.42,d);const turn=smooth(0.12,0.55,d);
-    const us=clamp((d-0.32)/1.6),sv=Math.pow(us,1.8);
+    const us=clamp((d-0.32)/1.5),sv=Math.pow(us,1.8);
     const B=(q)=>{const P=[C0,[C0[0]-34,C0[1]+16],[C0[0]-380,C0[1]+40],[-170,C0[1]+30]];const m=1-q;return[m*m*m*P[0][0]+3*m*m*q*P[1][0]+3*m*q*q*P[2][0]+q*q*q*P[3][0],m*m*m*P[0][1]+3*m*m*q*P[1][1]+3*m*q*q*P[2][1]+q*q*q*P[3][1]];};
     const h=B(sv),h2=B(Math.min(1,sv+0.004)),pathAng=Math.atan2(h2[1]-h[1],h2[0]-h[0]);
     // 头从朝上慢慢转到朝左（逆时针转），起游以后跟着路线走
@@ -162,7 +162,7 @@ function drawFinale(t){const a=smooth(T_FIN-1.1,T_FIN,t);if(a<=0)return;ctx.save
     const ph=2*Math.PI*(2.2*Math.max(0,d)+1.8*Math.max(0,d-0.35));
     const p=procPose(h[0],h[1],ang,L,cv,amp,ph,t);
     ctx.save();ctx.globalAlpha=b*cf;commaFish(ctx,p,k,'#e8e0d2');ctx.restore();}
-  ctx.letterSpacing='0px';{const ds=t-(T_FIN+0.3);if(ds>0)stampSeal(ctx,SEAL_TITLE,x0+wA+wB+wC+38,base-20,52*(1+0.05*Math.exp(-ds*16)),0.88*b*(1-Math.pow(1-smooth(0,0.22,ds),2)),0.01,'source-over');}ctx.restore();}
+  ctx.letterSpacing='0px';stampSeal(ctx,SEAL_TITLE,x0+wA+wB+wC+38,base-20,52,0.88*b,0.01,'source-over');ctx.restore();}   // 印和片名一起从黑里浮出来（不再晚半拍另盖）
 // 3) 大鱼拼成以后：片名出现在墙上，鱼尾上方的空处，底下一小盏灯（和开头的片名呼应）
 const ET=[-3050+1736,30-1545],   // 大鱼中心 FC=[-3050,30]
       ET_X0=0,ET_F=118,ET_DY=148,ET_DX=196;
