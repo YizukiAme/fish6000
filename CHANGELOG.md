@@ -2,6 +2,14 @@
 
 English · [中文](CHANGELOG.zh-CN.md)
 
+## [v1.4] — 2026-11-16
+
+- Give the pixel station four distinct games: a dot maze, scrolling coin collection, a fishhook escape, and chasing smaller fish (2:01–2:19).
+- Add scores, lives, floating point awards, level cards, and a warning when the hook approaches.
+- Animate the fish's startled escape and lunging pursuit, with growth after each smaller fish it catches and camera accents on upgrades.
+- Synchronize dot, coin, hook, and feeding sounds with the action.
+- Refresh the station montage and documentation.
+
 ## [v1.3] — 2026-11-15
 
 - Rework the Cizhou scene: the fish pauses while dry-brush strokes, carved scales, weeds, and the final eye bring it to life, with a gentle camera push-in.
@@ -42,3 +50,5 @@ English · [中文](CHANGELOG.zh-CN.md)
 [v1.0]: https://github.com/YizukiAme/fish6000/releases/tag/v1.0
 
 [v1.3]: https://github.com/YizukiAme/fish6000/compare/v1.2...v1.3
+
+[v1.4]: https://github.com/YizukiAme/fish6000/compare/v1.3...v1.4

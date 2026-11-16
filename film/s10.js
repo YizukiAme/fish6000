@@ -10,21 +10,82 @@ const LV=[{rx:40,ry:30},{rx:80,ry:60},{rx:160,ry:120},{rx:320,ry:240}];
 const PAL_GB=[[15,56,15],[48,98,48],[139,172,15],[155,188,15]];
 const PAL_EGA=[[0,0,0],[0,0,170],[0,170,0],[0,170,170],[170,0,0],[170,0,170],[170,85,0],[170,170,170],[85,85,85],[85,85,255],[85,255,85],[85,255,255],[255,85,85],[255,85,255],[255,255,85],[255,255,255]];
 const BAYER4=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5].map(v=>(v+0.5)/16-0.5);
-const PELLETS=[[-5995,-35],[-5900,20],[-6030,-10],[-5940,-24]];
+const PELLETS=[[-5995,-35],[-5900,20],[-6004,17],[-5940,-24]];   // 每一关的终点豆（第三关的放在绕完一圈的出口）
 const SB=mk(SBW,SBH),sbx=SB.getContext('2d');
 const LVC=LV.map(l=>{const c=mk(l.rx,l.ry);return{c,x:c.getContext('2d',{willReadFrequently:true})};});
 const toBuf=(x,y)=>[(x-(SCR.x-SCR.w/2))/SCR.w*SBW,(y-(SCR.y-SCR.h/2))/SCR.h*SBH];
 function levelAt(t){let k=0;for(const tu of T10UP)if(t>=tu)k++;return k;}
 function yearAt(t){const k=levelAt(t);if(t>=T10EAT4)return Math.round(lerp(2003,2026,smooth(T10EAT4,T10EAT4+0.6,t)));return YEARS[k];}
 // 3×5 的点阵数字
-const DIG={0:'111101101101111',1:'010110010010111',2:'111001111100111',3:'111001111001111',4:'101101111001001',5:'111100111001111',6:'111100111101111',7:'111001010010010',8:'111101111101111',9:'111101111001111',L:'100100100100111',V:'101101101101010'};
+const DIG={0:'111101101101111',1:'010110010010111',2:'111001111100111',3:'111001111001111',4:'101101111001001',5:'111100111001111',6:'111100111101111',7:'111001010010010',8:'111101111101111',9:'111101111001111',L:'100100100100111',V:'101101101101010',E:'111100111100111','+':'000010111010000','!':'010010010000010'};
 function pixText(c,s,x,y,px,col){c.fillStyle=col;let cx=x;for(const ch of s){const g=DIG[ch];if(!g){cx+=2*px;continue;}for(let i=0;i<15;i++)if(g[i]==='1')c.fillRect(cx+(i%3)*px,y+Math.floor(i/3)*px,px,px);cx+=4*px;}}
 // 把主角画进某一级的小画布（缓冲坐标 → 小画布坐标）
 function fishToBuf(p){const sc=SBW/SCR.w;const ox=SCR.x-SCR.w/2,oy=SCR.y-SCR.h/2;return{...p,L:p.L*sc,sp:p.sp.map(q=>({x:(q.x-ox)*sc,y:(q.y-oy)*sc,nx:q.nx,ny:q.ny}))};}
+// ---------- 每一关是那一年的一种游戏 ----------
+// 1980 吃豆：一排豆，主题的十个音一个音吃一颗（吃豆的“咔”就是旋律）  1989 横版：背景跟着鱼往后卷，一路吃金币
+// 1995 躲钩子：鱼钩垂下来，鱼一惊、扭开，钩子空提上去                   2003 大鱼吃小鱼：吃一条长大一点
+// 豆、金币、小鱼都按鱼原来的路线摆：鱼在哪一拍游到哪，东西就放在哪——鱼的路线一点没改
+const MUS10=[[T10ON+0.45,T10UP[0]],[T10UP[0]+0.25,T10UP[1]],[T10UP[1]+0.25,T10UP[2]],[T10UP[2]+0.25,T10EAT4]];   // 每一关芯片音乐的起止（和 score_full.py 的 chip_level 一致）
+const cellT=(k,c)=>MUS10[k][0]+c*(MUS10[k][1]-MUS10[k][0])/16;                                                    // 第 k 关第 c 格（一小节 16 格）
+const HOOK10={x:-5836,yTop:-150,y0:-50,tIn:[126.42,126.8],tAlert:126.8,tStrike:127.26,tUp:0.2};
+const head10=t=>{const p=heroPoseNow(t);return[p.sp[0].x,p.sp[0].y];};
+let EV10C=null,SC2X0=0;
+function scroll2(t){return -1.7*(head10(t)[0]-SC2X0);}                                                                  // 1989：背景卷动的量（世界坐标）
+function EV10(){if(EV10C)return EV10C;SC2X0=head10(T10UP[0])[0];const E={dots:[],coins:[],minnows:[],pts:[]};
+  for(const c of [0,2,4,5,6,8,9,10,12,14]){const te=cellT(0,c);const w=head10(te);E.dots.push({te,w});E.pts.push({te,n:10,w,k:0});}
+  E.pts.push({te:T10UP[0],n:50,w:head10(T10UP[0]),k:0});
+  for(let c=2;c<=14;c+=2){const te=cellT(1,c);const w=head10(te);E.coins.push({k:1,te,w,sc:scroll2(te)});E.pts.push({te,n:100,w,k:1});}
+  E.pts.push({te:T10UP[1],n:500,w:head10(T10UP[1]),k:1});
+  E.pts.push({te:HOOK10.tStrike+0.12,n:500,w:[HOOK10.x-10,HOOK10.y0+6],k:2});
+  for(const c of [8,10,12,14]){const te=cellT(2,c);const w=head10(te);E.coins.push({k:2,te,w,sc:0});E.pts.push({te,n:100,w,k:2});}
+  E.pts.push({te:T10UP[2],n:500,w:head10(T10UP[2]),k:2});
+  for(const c of [4,8,12]){const te=cellT(3,c);const a=head10(te),b=head10(te-0.12);const dx=a[0]-b[0],dy=a[1]-b[1],l=Math.hypot(dx,dy)||1;E.minnows.push({te,w:a,d:[dx/l,dy/l],v:0.4*l/0.12});E.pts.push({te,n:200,w:a,k:3});}
+  E.pts.push({te:T10EAT4,n:5000,w:head10(T10EAT4),k:3});
+  EV10C=E;return E;}
+function score10(t){let s=0;for(const e of EV10().pts)if(t>=e.te)s+=e.n*Math.min(1,(t-e.te)/0.3);return Math.round(s);}
+function hookY(t){const H=HOOK10;if(t<H.tIn[0])return H.yTop;if(t<H.tStrike){const q=clamp((t-H.tIn[0])/(H.tIn[1]-H.tIn[0]));return lerp(H.yTop,H.y0,1-Math.pow(1-q,3))+1.5*Math.sin((t-H.tIn[0])*7);}
+  const q=clamp((t-H.tStrike)/H.tUp);return lerp(H.y0,H.yTop-40,q*q);}
+// 鱼一惊：往钩子的反方向一缩（整条鱼平移，不碰路线），尾巴乱摆一下
+HAMP.push(t=>(1-0.5*smooth(126.35,126.7,t)*(1-smooth(127.12,127.2,t)))*(1+0.6*smooth(127.15,127.25,t)*(1-smooth(127.6,127.95,t))));   // 1995：凑近饵时屏住，逃的时候尾巴猛摆
+HFB.push(t=>1.6*smooth(127.15,127.25,t)*(1-smooth(127.55,127.9,t)));
+{const B=[130.625,131.45,132.275,133.1];HAMP.push(t=>{let a=1;for(const b of B)a+=0.55*Math.exp(-(((t-b+0.06)/0.12)**2));return a*(1-0.35*smooth(132.5,132.8,t)*(1-smooth(132.98,133.06,t)));});   // 2003：每一扑尾巴猛甩；盯住大豆子那一下屏住
+  HFB.push(t=>{let a=0;for(const b of B)a+=1.2*Math.exp(-(((t-b+0.08)/0.13)**2));return a;});}
+// 游出显像管以后尾巴稍微摆快一点，把这一站多游的那段路、多摆的那些下补齐到整圈：后面代码站和终章里鱼的姿态和原来一模一样（PHASE10 是量出来的）
+const PHASE10=0.2935;HFB.push(t=>PHASE10*smooth(135.3,135.7,t)*(1-smooth(136.2,136.6,t)));
+function gameLayer(k,t,c,p,ta){const E=EV10();
+  if(k===0){c.fillStyle='#fff';for(const [x,y,w,h] of [[16,64,608,16],[16,448,608,16],[16,64,16,400],[608,64,16,400],[96,128,160,16],[96,128,16,64],[384,384,176,16],[544,336,16,64]])c.fillRect(x,y,w,h);   // 迷宫的墙
+    for(const d of E.dots){if(t>=d.te)continue;const [x,y]=toBuf(...d.w);c.fillRect(Math.floor(x/16)*16,Math.floor(y/16)*16,16,16);}}
+  if(k===1||k===2){const sc=k===1&&p?scroll2(t):0;for(const o of E.coins){if(o.k!==k||t>=o.te)continue;const [x,y]=toBuf(o.w[0]+(sc-o.sc),o.w[1]);const sp=Math.abs(Math.cos(ta*5+o.te*3));
+      if(k===1){c.fillStyle='#0f380f';c.beginPath();c.ellipse(x,y,20*sp+4,20,0,0,7);c.fill();c.fillStyle='#9bbc0f';c.beginPath();c.ellipse(x,y,9*sp+2,9,0,0,7);c.fill();}
+      else{c.fillStyle='#ffd040';c.beginPath();c.ellipse(x,y,11*sp+2,11,0,0,7);c.fill();c.fillStyle='#fff8b0';c.fillRect(x-2*sp,y-7,3*sp+1,6);}}}
+  if(k===2){const hy=hookY(t);if(hy>HOOK10.yTop-35){const [bx,by]=toBuf(HOOK10.x+2*Math.sin(ta*2.2),hy);c.strokeStyle='#e8e8e8';c.lineWidth=4;c.beginPath();c.moveTo(bx,-4);c.lineTo(bx,by);c.stroke();
+      c.strokeStyle='#b8b8c8';c.lineWidth=5;c.beginPath();c.moveTo(bx,by);c.lineTo(bx,by+22);c.arc(bx-10,by+22,10,0,Math.PI);c.lineTo(bx-20,by+12);c.stroke();
+      if(t<HOOK10.tStrike+0.05){c.fillStyle='#ff6aa0';for(let i=0;i<4;i++){c.beginPath();c.arc(bx-6-4*Math.sin(ta*9+i),by+26+i*7,6,0,7);c.fill();}}}}
+  if(k===3){for(const m of E.minnows){if(t>=m.te)continue;const dt=t-m.te;const nx=-m.d[1],ny=m.d[0];const wob=3*Math.sin(ta*6+m.te*5);
+      const [x,y]=toBuf(m.w[0]+m.d[0]*m.v*dt+nx*wob,m.w[1]+m.d[1]*m.v*dt+ny*wob);const a=Math.atan2(m.d[1],m.d[0]);c.save();c.translate(x,y);c.rotate(a);c.scale(1.7,1.7);
+      c.fillStyle='#4f86b8';c.beginPath();c.moveTo(-14,0);c.lineTo(-30,-11+3*Math.sin(ta*14+m.te));c.lineTo(-30,11+3*Math.sin(ta*14+m.te));c.closePath();c.fill();
+      c.fillStyle='#bfe2f6';c.beginPath();c.ellipse(0,0,18,9,0,0,7);c.fill();c.fillStyle='#5a8cb8';c.beginPath();c.ellipse(-1,-3,16,5,0,Math.PI,0);c.fill();
+      c.fillStyle='#10202c';c.beginPath();c.arc(10,-2,2.4,0,7);c.fill();c.restore();}}}
+// 屏幕上的计分板：分数、命、吃到东西的“+10”、升级时的大字卡、看见钩子时的“！”
+function fishIcon(c,x,y,px,col){c.fillStyle=col;const R=['.###.#','#.####','.###.#'];R.forEach((r,j)=>{for(let i=0;i<6;i++)if(r[i]==='#')c.fillRect(x+i*px,y+j*px,px,px);});}
+function hud10(t,k,p){const px=[8,8,4,3][k],col=k===1?'#0f380f':'#fff';
+  pixText(sbx,String(yearAt(t)),SBW-18*px,px*3,px,col);pixText(sbx,'LV'+(k+1),px*3,px*3,px,col);
+  const sc=String(score10(t)).padStart(6,'0');pixText(sbx,sc,SBW/2-12*px,px*3,px,col);
+  const ip=Math.max(2,Math.round(px*0.45));for(let i=0;i<3;i++)fishIcon(sbx,px*3+12*px+px*1.5+i*7*ip,px*3+px*1.2,ip,col);   /* 命：三条小鱼，跟在 LV 后面 */
+  for(const e of EV10().pts){const dt=t-e.te;if(dt<0||dt>0.7||e.k!==k)continue;if(dt>0.45&&Math.floor(dt*16)%2)continue;const [x,y]=toBuf(...e.w);const fp=[6,5,4,3][k];
+    pixText(sbx,'+'+e.n,x-((String(e.n).length+1)*4*fp)/2,y-34-60*dt,fp,k===1?'#0f380f':k===2?'#ffff55':'#fff');}
+  if(k===2&&p&&t>=HOOK10.tAlert&&t<HOOK10.tStrike+0.12&&Math.floor((t-HOOK10.tAlert)*12)%2===0){const [x,y]=toBuf(p.sp[0].x,p.sp[0].y);pixText(sbx,'!',x-10,y-90,7,'#ffff55');}
+  if(k>0){const dt=t-T10UP[k-1]-0.3;if(dt>=0&&dt<0.6&&(dt<0.35||Math.floor(dt*10)%2===0)){const fp=[0,12,10,9][k],txt='LEVEL '+(k+1),w=(txt.length*4-1)*fp;
+    sbx.fillStyle=k===1?'rgba(155,188,15,0.92)':'rgba(0,0,0,0.6)';sbx.fillRect(SBW/2-w/2-fp*2,SBH*0.42-fp*2,w+fp*4,fp*9);pixText(sbx,txt,SBW/2-w/2,SBH*0.42,fp,k===1?'#0f380f':k===2?'#ffff55':'#fff');}}}
+// 升级、吃大豆子的那一下：镜头往前一顿
+CAMHOOK.push(r=>{const t=W5(r);let b=0;for(const tu of [...T10UP,T10EAT4])if(t>=tu)b=Math.max(b,Math.exp(-(t-tu)*9));return[0,0,1+0.03*b];});
 function drawLevelScene(k,t,c,p){const l=LV[k],ta=t-T10ON+115;/* ta：屏里动画用的钟（水草、气泡、豆子的闪） */c.setTransform(1,0,0,1,0,0);c.imageSmoothingEnabled=false;c.clearRect(0,0,l.rx,l.ry);c.setTransform(l.rx/SBW,0,0,l.rx/SBW,0,0);
   // 背景
   if(k===0){c.fillStyle='#000';c.fillRect(0,0,SBW,SBH);}
-  else if(k===1){c.fillStyle='#9bbc0f';c.fillRect(0,0,SBW,SBH);c.fillStyle='#8bac0f';for(let i=0;i<6;i++){c.fillRect(0,330+i*26,SBW,10);}c.fillStyle='#306230';for(const sx of [70,120,520,580]){for(let j=0;j<6;j++)c.fillRect(sx+12*Math.sin(j*0.9+ta*1.5),480-j*28,14,26);}}
+  else if(k===1){const off=(p?scroll2(t):0)*SBW/SCR.w;const wr=(x,P)=>((x%P)+P)%P;c.fillStyle='#9bbc0f';c.fillRect(0,0,SBW,SBH);c.fillStyle='#8bac0f';for(let i=0;i<6;i++){c.fillRect(0,330+i*26,SBW,10);}
+    for(let i=0;i<8;i++){const bx=wr(i*97+30+off*0.4,720)-40,by=60+((i*71)%220);c.fillRect(bx,by,10,10);}          /* 远处的气泡：卷得慢 */
+    c.fillStyle='#306230';for(let i=0;i<5;i++){const rx=wr(i*190+20+off,950)-120;for(let j=0;j<4;j++)c.fillRect(rx+j*14,480-24-j*12,96-j*28,24+j*12);}   /* 礁石 */
+    for(let i=0;i<6;i++){const sx=wr(i*131+70+off,786)-80;for(let j=0;j<6;j++)c.fillRect(sx+12*Math.sin(j*0.9+ta*1.5+i),480-j*28,14,26);}}
   else if(k===2){const g=c.createLinearGradient(0,0,0,SBH);g.addColorStop(0,'#2a6ad8');g.addColorStop(1,'#0a1a60');c.fillStyle=g;c.fillRect(0,0,SBW,SBH);c.fillStyle='#c09040';c.fillRect(0,430,SBW,50);
     c.fillStyle='#20a040';for(const sx of [60,110,540,590]){for(let j=0;j<7;j++)c.fillRect(sx+16*Math.sin(j*0.8+ta*1.4),430-j*30,18,30);}
     c.fillStyle='#a0e0ff';for(let i=0;i<10;i++){const bx=(i*97+40)%SBW,by=SBH-((ta*60+i*53)%SBH);c.fillRect(bx,by,8,8);}}
@@ -34,7 +95,8 @@ function drawLevelScene(k,t,c,p){const l=LV[k],ta=t-T10ON+115;/* ta：屏里动�
     for(const [sx,h,ph] of [[50,200,0],[100,150,1],[560,220,2],[610,160,3]]){c.strokeStyle='#1e8c46';c.lineWidth=12;c.beginPath();c.moveTo(sx,450);for(let j=1;j<=10;j++)c.lineTo(sx+20*Math.sin(j*0.6+ta*1.3+ph),450-j*h/10);c.stroke();}
     c.fillStyle='rgba(220,240,255,0.7)';for(let i=0;i<14;i++){const bx=(i*83+20)%SBW+6*Math.sin(ta*2+i),by=SBH-((ta*70+i*41)%SBH);c.beginPath();c.arc(bx,by,4+i%3*2,0,7);c.fill();}}
   // 豆
-  for(let i=k;i<4;i++){if(i===3&&t>=T10EAT4)continue;const [px,py]=toBuf(...PELLETS[i]);const big=i===3;const pul=1+0.15*Math.sin(ta*8);const r=(big?16:7)*pul;
+  gameLayer(k,t,c,p,ta);
+  for(let i=k;i<=k;i++){if(i===3&&t>=T10EAT4)continue;const [px,py]=toBuf(PELLETS[i][0]+(k===1&&p?scroll2(t)-scroll2(T10UP[1]):0),PELLETS[i][1]);const big=i===3;const pul=1+0.15*Math.sin(ta*8);const r=(big?16:7)*pul;
     if(k===0){c.fillStyle='#fff';c.fillRect(px-r,py-r,2*r,2*r);}
     else if(k===1){c.fillStyle='#0f380f';c.fillRect(px-r,py-r,2*r,2*r);}
     else{c.fillStyle=big?'#ffe060':'#fff060';c.beginPath();c.arc(px,py,r,0,7);c.fill();if(k===3){c.fillStyle='rgba(255,255,255,0.8)';c.beginPath();c.arc(px-r*0.3,py-r*0.3,r*0.35,0,7);c.fill();}}}
@@ -55,8 +117,8 @@ function drawLevelScene(k,t,c,p){const l=LV[k],ta=t-T10ON+115;/* ta：屏里动�
 // 屏幕缓冲：按当前关卡出图；升级时一道扫描线从上往下刷新
 function renderScreen(t,p){const k=levelAt(t);sbx.setTransform(1,0,0,1,0,0);sbx.imageSmoothingEnabled=false;
   drawLevelScene(k,t,LVC[k].x,p);sbx.drawImage(LVC[k].c,0,0,SBW,SBH);
-  {const px=[8,8,4,3][k];const col=k===1?'#0f380f':'#fff';pixText(sbx,String(yearAt(t)),SBW-18*px,px*3,px,col);pixText(sbx,'LV'+(k+1),px*3,px*3,px,col);}
   const tu=T10UP[k-1];if(k>0&&t<tu+0.35){const q=(t-tu)/0.35;drawLevelScene(k-1,t,LVC[k-1].x,p);const yy=Math.floor(q*SBH);sbx.drawImage(LVC[k-1].c,0,yy*LV[k-1].ry/SBH,LV[k-1].rx,LV[k-1].ry*(1-q),0,yy,SBW,SBH-yy);sbx.fillStyle='rgba(255,255,255,0.85)';sbx.fillRect(0,yy-3,SBW,6);}
+  hud10(t,k,p);
   const fl=Math.max(...T10UP.map(tu=>Math.exp(-Math.max(0,t-tu)*14)*(t>=tu?1:0)));if(fl>0.02){sbx.fillStyle=`rgba(255,255,255,${0.5*fl})`;sbx.fillRect(0,0,SBW,SBH);}}
 // ---------- 显像管：外壳、玻璃、扫描线、开机与塌缩 ----------
 const SCRC=mk(W,H),scx=SCRC.getContext('2d');
@@ -122,9 +184,14 @@ LABELS.push([S10X,S10W,S10W,'拾','游','电子游戏 · 像素']);
 LIGHTS.push({x:S10X,y:-10,r:820,k:t=>smooth(116.8,118.8,t)});
 GK.push([118.6,-5700,-10],[119,-5790,-20],[119.4,-5830,-22],[120.3,-5880,10],[121,-5930,20],[121.8,-5970,-5],[122.5,...PELLETS[0]],
   [123.2,-6030,-60],[123.9,-6050,-20],[124.6,-6020,30],[125.2,-5960,45],[125.9,...PELLETS[1]],
-  [126.6,-5860,-20],[127.3,-5880,-70],[128,-5950,-90],[128.7,-6010,-60],[129.5,...PELLETS[2]],
-  [130.3,-6000,40],[131,-5930,55],[131.7,-5870,20],[132.4,-5880,-30],[T10EAT4,-5938,-24],[133.6,-5946,-26],[134.2,-5960,-26],[T10OUT,-6000,-24],[135.3,-6080,-20],[135.8,-6180,-12],[136.3,-6262,-6],[136.8,-6330,0]);
-HL.push([118.0,150],[119.0,150],[119.35,90],[133.1,90],[134.6,150],[135.2,140]);
+  // 1995：凑到饵跟前、一动不动；“！”——钩子一提，鱼猛地一折身（鱼受惊时真是这么逃的），冲出去，绕一个整圈把一圈金币吃掉，扑向豆子
+  [126.1,-5882,2],[126.3,-5866,-16],[126.55,-5857,-29],[126.8,-5852,-34],[127.0,-5850,-35],[127.14,-5848,-34],
+  [127.22,-5845,-29],[127.3,-5849,-19],[127.38,-5862,-11],[127.47,-5886,-5],[127.6,-5928,10],[127.73,-5968,22],[127.875,-6010,27],
+  [128.08,-6042,14],[128.29,-6055,-20],[128.5,-6042,-52],[128.71,-6010,-65],[128.92,-5978,-52],[129.13,-5965,-20],[129.32,-5978,6],[129.5,...PELLETS[2]],
+  // 2003：一条一条地追：先慢慢靠近，猛一扑，咬到了往前滑一下，急转去追下一条；最后绕回来，盯住大豆子，一口吞下
+  [129.7,-6031,12],[129.9,-6049,-8],[130.08,-6046,-32],[130.25,-6026,-44],[130.42,-6009,-39],[130.625,-5955,-12],[130.85,-5935,-2],[131.1,-5916,9],[131.3,-5902,20],
+  [131.45,-5856,39],[131.62,-5838,37],[131.85,-5828,15],[132.05,-5843,-3],[132.275,-5888,-36],[132.45,-5906,-44],[132.75,-5915,-40],[132.95,-5924,-33],[T10EAT4,-5938,-24],[133.6,-5946,-26],[134.2,-5960,-26],[T10OUT,-6000,-24],[135.3,-6080,-20],[135.8,-6180,-12],[136.3,-6262,-6],[136.8,-6330,0]);
+HL.push([118.0,150],[119.0,150],[119.35,90],[130.6,90],[130.8,97],[131.43,97],[131.63,104],[132.25,104],[132.45,111],[133.1,111],[134.6,150],[135.2,140]);   // 2003：吃一条小鱼长大一点
 HAMP.push(t=>1+0.8*smooth(T10EAT4,T10EAT4+0.2,t)*(1-smooth(T10OUT+0.6,T10OUT+1.6,t)));
 HFB.push(t=>2.5*smooth(T10EAT4,T10EAT4+0.2,t)*(1-smooth(T10OUT+0.6,T10OUT+1.6,t)));
 for(const tu of T10UP)SHAKES.push([tu,3]);SHAKES.push([T10OFF,9],[T10EAT4,4]);

@@ -376,6 +376,27 @@ chip_level(0, T10ON + 0.45, T10UP[0])
 chip_level(1, T10UP[0] + 0.25, T10UP[1])
 chip_level(2, T10UP[1] + 0.25, T10UP[2])
 chip_level(3, T10UP[2] + 0.25, T10EAT4)
+# 每一关的游戏音效（和画面 film/s10.js 的 EV10 对齐）：1980 吃一颗豆“咔”一下；1989、1995 吃金币“叮”；1995 鱼钩垂下来、“！”、空提上去；
+# 2003 吞小鱼“咕”。音高都在这一关的调里。用自己的随机数，后面所有声音不受影响
+import audio_lib as _alG
+_rngG_main = _alG.rng; _alG.rng = np.random.default_rng(10)
+def chirp(f0, f1, dur, amp, duty=0.25):
+    n = int(dur * SR); tt = tv(n); f = f0 * (f1 / f0) ** (tt / dur); ph = np.cumsum(f / SR) % 1.0
+    return np.where(ph < duty, 1.0, -1.0) * amp * np.clip(tt / 0.003, 0, 1) * np.clip((dur - tt) / 0.008, 0, 1)
+MUS10 = [(T10ON + 0.45, T10UP[0]), (T10UP[0] + 0.25, T10UP[1]), (T10UP[1] + 0.25, T10UP[2]), (T10UP[2] + 0.25, T10EAT4)]
+cellT = lambda k, c: MUS10[k][0] + c * (MUS10[k][1] - MUS10[k][0]) / 16
+for c in [0, 2, 4, 5, 6, 8, 9, 10, 12, 14]: tr.add(chirp(700, 260, 0.06, 0.02, 0.5), cellT(0, c), 0.15)          # 吃豆：就踩在主题的每个音上
+def coin(tt, a, b): tr.add(pulse(F(a), 0.05, 0.5, 0.026), tt, 0.2); tr.add(pulse(F(b), 0.13, 0.5, 0.026, dec=0.08), tt + 0.05, 0.2)
+for c in range(2, 15, 2): coin(cellT(1, c), 'B5', 'E6')                                                            # 1989 的金币（E 调）
+H_IN, H_ALERT, H_STRIKE = (126.42, 126.8), 126.8, 127.26                                                           # 鱼钩（和 film/s10.js 的 HOOK10 一致）
+tr.add(chirp(1300, 520, H_IN[1] - H_IN[0], 0.015, 0.125), H_IN[0], 0.35)
+for j in range(2): tr.add(pulse(F('C#7'), 0.04, 0.5, 0.028), H_ALERT + 0.07 * j, 0.0)
+tr.add(chipnoise(0.18, 0.04, 0.07, hi=True), H_STRIKE, 0.35); tr.add(chirp(380, 1700, 0.16, 0.02, 0.5), H_STRIKE, 0.35)
+for j, nm in enumerate(['C#6', 'F#6', 'A#6']): tr.add(pulse(F(nm), 0.05, 0.5, 0.022, dec=0.06), H_STRIKE + 0.12 + 0.045 * j, 0.0)   # 躲过去了：+500
+for c in [8, 10, 12, 14]: coin(cellT(2, c), 'C#6', 'F#6')                                                          # 1995 的金币（F# 调）
+for c in [4, 8, 12]: tt = cellT(3, c); tr.add(chirp(1500, 420, 0.09, 0.028, 0.25), tt, 0.0); tr.add(chipnoise(0.05, 0.014, 0.02), tt, 0.0)   # 2003：吞小鱼
+for tt in [cellT(3, c) - 0.2 for c in [4, 8, 12]] + [T10EAT4 - 0.15]: tr.add(chirp(240, 900, 0.16, 0.009, 0.5), tt, -0.2); tr.add(chipnoise(0.14, 0.012, 0.09, hi=True), tt, -0.2)   # 每一扑前“嗖”一下
+_alG.rng = _rngG_main
 for k, tu in enumerate(T10UP + [T10EAT4]):      # 升级的那一声：直接用下一关的主和弦往上跑
     root = 62 + [2, 4, 7, 9][k]
     tr.add(pulse(F(root + 24), 0.05, 0.5, 0.06), tu - 0.04, 0.2)
