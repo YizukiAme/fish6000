@@ -10,7 +10,7 @@ English · [中文](CHANGELOG.zh-CN.md)
 - Redraw the game fish for each era: monochrome, four-tone green, 16-color pixel art, and shaded sprites. Keep their backs upright through turns and refine eyes, fins, and smaller fish.
 - Add a detailed CRT housing, console, and wired controller to the pixel station.
 - Soften the xun's breath texture and extend sustained sounds across the new pauses.
-- Extend the film to 2:53.35 and update chapter timings and documentation.
+- Extend the film to 2:53.35, update chapter timings and documentation, and refresh the cover and station montage.
 
 ## [v1.4] — 2026-11-16
 
