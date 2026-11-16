@@ -7,7 +7,13 @@ const T5P=49.0;   // 主角的头碰到枕面（之后枕面里那部分先是�
 // ---------- 时间：画鱼的时候，全片的钟慢慢停下来，画完再慢慢走 ----------
 // 别的站全按原来的时间走；只有这一站用真实的钟（TNOW）。这样插进来的 D5 秒不会碰到后面任何一站的时间。
 const W5R0=50.9,W5A=0.9,W5H=2.5,D5=W5A+W5H;     // 从 50.9 秒起用 0.9 秒慢下来，停 2.5 秒，再用 0.9 秒恢复：一共多出 3.4 秒
-let TNOW=0;                                      // 真实的时间（render 一进来就设好）
+let TNOW=0,TREAL=0;                              // TREAL：真正的播放时间；TNOW：去掉前面两处停顿以后的时间（磁州窑这一站按它画）
+// 前面再停两处（只按“原来的时间”标位置）：甲骨裂开以后、铜洗里三条鱼并排的时候。tau 是停住的那一刻，A 是慢下来/快起来各用多久，H 是停多久
+const PAUSES=[{tau:30.625,A:0.35,H:0.5},{tau:44.9,A:0.35,H:0.75}];
+const DE=PAUSES.reduce((s,p)=>s+p.A+p.H,0);
+function rampI(u,A,H){if(u<A){const x=u/A;return A*(x*x*x-x*x*x*x/2);}if(u<A+H)return A/2+(u-A);const x=(u-A-H)/A;return A/2+H+A*(x-(x*x*x-x*x*x*x/2));}
+function WE(r){let off=0;for(const P of PAUSES){const r0=P.tau-P.A/2+off,u=r-r0;if(u<=0)return r-off;if(u<2*P.A+P.H)return r-off-rampI(u,P.A,P.H);off+=P.A+P.H;}return r-off;}
+function pauseReal(i){let off=0;for(let j=0;j<i;j++)off+=PAUSES[j].A+PAUSES[j].H;return PAUSES[i].tau-PAUSES[i].A/2+off;}   // 第 i 处停顿开始慢下来的真实时刻
 function W5(r){if(r<=W5R0)return r;const u=r-W5R0;if(u>=2*W5A+W5H)return r-D5;let I;
   if(u<W5A){const x=u/W5A;I=W5A*(x*x*x-x*x*x*x/2);}else if(u<W5A+W5H)I=W5A/2+(u-W5A);else{const x=(u-W5A-W5H)/W5A;I=W5A/2+W5H+W5A*(x-(x*x*x-x*x*x*x/2));}
   return r-I;}

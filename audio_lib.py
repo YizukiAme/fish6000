@@ -46,7 +46,7 @@ def lp(x, fc):
 def norm(y, amp): return y / (np.max(np.abs(y)) + 1e-9) * amp
 
 # ---------- 埙：陶制的闭口吹奏乐器，几乎是纯音，带气声 ----------
-def xun_phrase(notes, amp=0.2, vib=0.13, breath=0.06, port=0.06, scoop=0.45, over=0.0, flutter=0.0, rel=0.35, att=0.14):
+def xun_phrase(notes, amp=0.2, vib=0.13, breath=0.06, port=0.06, scoop=0.45, over=0.0, flutter=0.0, rel=0.35, att=0.14, airy=False):
     """notes: [(start, dur, pitch)]，相对时间，首尾相连成一口气"""
     T = notes[-1][0] + notes[-1][1] + rel; n = int(T * SR); t = tv(n)
     s = np.full(n, float(midi(notes[0][2])))
@@ -67,8 +67,13 @@ def xun_phrase(notes, amp=0.2, vib=0.13, breath=0.06, port=0.06, scoop=0.45, ove
     hk = [1, 0.07 + 0.25 * over, 0.11 + 0.2 * over, 0.025 + 0.12 * over, 0.035 + 0.1 * over]
     y = sum(a * np.sin((k + 1) * ph) for k, a in enumerate(hk))
     nz = rng.standard_normal(n)
-    tone_noise = lowpass(nz, 3) * np.sin(ph + 0.3) * 0.6
-    air = hp(nz, 2200) * 0.35
+    if airy:      # 竹管的气声：宽带的“嘶”（排箫、笛子、洞箫用）
+        tone_noise = lowpass(nz, 3) * np.sin(ph + 0.3) * 0.6
+        air = hp(nz, 2200) * 0.35
+    else:         # 埙的气声：一股贴着音高的窄带噪声（只在基音上下两百来赫兹），像气息揉进音里；再加一层很轻的 700–2400 Hz 气流。
+                  # 埙几乎是纯音，宽带的嘶声在它上面没东西盖住，听起来是颗粒感
+        tone_noise = lowpass(nz, 90) * 9.5 * np.sin(ph + 0.3) * 0.3
+        air = lp(hp(nz, 700), 2400) * 0.25
     chiff = np.exp(-t / 0.05) * 0.6
     y = y + (breath * (1 + 2 * over) + chiff) * (tone_noise + air)
     return norm(y * env, amp)
@@ -168,7 +173,7 @@ def finish(tr, path, wet=0.42, dry=0.8, ir_dur=3.2, ir_dec=0.9, fade_in=0.0, fad
 
 # ---------- 排箫：气声重、略带滑音 ----------
 def paixiao_phrase(notes, amp=0.15, vib=0.1, breath=0.16, port=0.04, rel=0.25):
-    return xun_phrase(notes, amp=amp, vib=vib, breath=breath, port=port, scoop=0.25, over=0.35, rel=rel, att=0.05)
+    return xun_phrase(notes, amp=amp, vib=vib, breath=breath, port=port, scoop=0.25, over=0.35, rel=rel, att=0.05, airy=True)
 # ---------- 建鼓：大而低 ----------
 def jiangu(amp=0.25, f0=58, dec=0.6):
     n = int(1.6 * SR); t = tv(n)
@@ -186,7 +191,7 @@ def bell(p, amp=0.16, dur=5.0, damp=1.0):
     return norm(y, amp)
 # ---------- 笛子：明亮，带笛膜的“沙” ----------
 def dizi_phrase(notes, amp=0.14, vib=0.12, breath=0.05, port=0.03, rel=0.18):
-    y = xun_phrase(notes, amp=1.0, vib=vib, breath=breath, port=port, scoop=0.3, over=1.0, rel=rel, att=0.03)
+    y = xun_phrase(notes, amp=1.0, vib=vib, breath=breath, port=port, scoop=0.3, over=1.0, rel=rel, att=0.03, airy=True)
     buzz = hp(np.sign(y) * np.abs(y) ** 0.45, 1800) * 0.22
     return norm(y + buzz, amp)
 # ---------- 拍板：木头的一声 ----------
@@ -370,7 +375,7 @@ def pad(notes, dur, amp=0.1, att=1.5, rel=2.0, detune=0.0035):
 # ================= 第二版配乐（全片一条主题）新加的乐器 =================
 # 洞箫：比埙亮一点、比笛子暗，气息长
 def xiao_phrase(notes, amp=0.12, vib=0.1, rel=0.45):
-    return xun_phrase(notes, amp=amp, vib=vib, breath=0.1, port=0.08, scoop=0.3, over=0.22, rel=rel, att=0.14)
+    return xun_phrase(notes, amp=amp, vib=vib, breath=0.1, port=0.08, scoop=0.3, over=0.22, rel=rel, att=0.14, airy=True)
 # 连弓的拉弦：音与音之间带滑音，长音上揉弦。板胡亮，二胡暖
 BANHU_F = ((1100, 400, 1.2), (2600, 600, 1.6), (3600, 700, 0.8))
 ERHU_F = ((700, 300, 1.4), (1500, 450, 0.9))

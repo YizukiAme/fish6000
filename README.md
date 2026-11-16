@@ -12,7 +12,7 @@
 
 ---
 
-The film runs 2 minutes 51 seconds. It uses no image assets and no recorded sound.
+The film runs 2 minutes 53 seconds. It uses no image assets and no recorded sound.
 
 Every frame is drawn live by Canvas 2D code: the grit of the clay, the cracks in the turtle shell, the ink bloom of a stone rubbing, the weave of silk, the cobalt of blue-and-white porcelain, the frayed edge of cut paper. The score is synthesized sample by sample in Python.
 

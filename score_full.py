@@ -12,7 +12,7 @@
 # 所有音效和声画同步点都在原来的时刻。
 import numpy as np, sys, json
 from audio_lib import *
-DUR = float(sys.argv[1]) if len(sys.argv) > 1 else 171.4
+DUR = float(sys.argv[1]) if len(sys.argv) > 1 else 173.35
 OUT = sys.argv[2] if len(sys.argv) > 2 else 'score_full.wav'
 tr = Track(DUR); N = tr.N; t = tv(N)
 
@@ -34,11 +34,49 @@ def Winv(tau):                 # 原来 → 真实
         if W5(mid) < tau: lo = mid
         else: hi = mid
     return hi
-REAL = [False]                 # True 的时候，写的就是真实时间
+# 再往前还有两处停顿（甲骨裂开以后、铜洗里三条鱼并排的时候），和 film/s5.js 的 PAUSES 一致。它们叠在磁州窑那次外面：
+#   真正的播放时间 --WE--> 磁州窑那一站的“真实时间” --W5--> 原来的时间
+PAUSES = [(30.625, 0.35, 0.5), (44.9, 0.35, 0.75)]       # (停住的那一刻, 慢下来/快起来各用多久, 停多久)
+DE = sum(A + H for _, A, H in PAUSES)
+def _rampI(u, A, H):
+    x1 = np.clip(u / A, 0, 1); x3 = np.clip((u - A - H) / A, 0, 1)
+    return np.where(u < A, A * (x1 ** 3 - x1 ** 4 / 2), np.where(u < A + H, A / 2 + (u - A), A / 2 + H + A * (x3 - (x3 ** 3 - x3 ** 4 / 2))))
+def WE(r):
+    r = np.asarray(r, float); out = np.array(r, float); off = 0.0; done = np.zeros(r.shape, bool)
+    for tau, A, H in PAUSES:
+        u = r - (tau - A / 2 + off)
+        mb = (~done) & (u <= 0); out = np.where(mb, r - off, out); done |= mb
+        mi = (~done) & (u < 2 * A + H); out = np.where(mi, r - off - _rampI(np.maximum(u, 0), A, H), out); done |= mi
+        off += A + H
+    return np.where(done, out, r - off)
+def WEinv(m):
+    off = 0.0
+    for tau, A, H in PAUSES:
+        m0 = tau - A / 2
+        if m <= m0: return m + off
+        if m < m0 + A:
+            lo, hi = m0 + off, m0 + off + 2 * A + H
+            for _ in range(60):
+                mid = (lo + hi) / 2
+                if float(WE(mid)) < m: lo = mid
+                else: hi = mid
+            return hi
+        off += A + H
+    return m + off
+def splice(y, at, extra, xf=0.08):
+    """把一个持续音在第 at 秒处接长 extra 秒（把前面稳定的一段再放一遍，接缝交叉淡化）：给横跨停顿的长音用"""
+    i, n, k = int(at * SR), int(extra * SR), int(xf * SR)
+    out = np.concatenate([y[:i], y[i - n:i], y[i:]]); w = np.linspace(0, 1, 2 * k)
+    out[i - k:i + k] = y[i - k:i + k] * (1 - w) + y[i - n - k:i - n + k] * w
+    return out
+P1S, P1D = PAUSES[0][0] - PAUSES[0][1] / 2, PAUSES[0][1] + PAUSES[0][2]                 # 第一处停顿开始的时刻、停多久
+P2S, P2D = PAUSES[1][0] - PAUSES[1][1] / 2 + P1D, PAUSES[1][1] + PAUSES[1][2]           # 第二处（真正的播放时间）
+REAL = [False]                 # False/0：写的是原来的时间；True/1：磁州窑那一站的“真实时间”；2：真正的播放时间
+def MAPT(t0): return t0 if REAL[0] == 2 else WEinv(t0 if REAL[0] else Winv(t0))
 _add, _add_st = Track.add, Track.add_st
-Track.add = lambda self, sig, t0, pan=0.0, gain=1.0: _add(self, sig, t0 if REAL[0] else Winv(t0), pan, gain)
-Track.add_st = lambda self, sl, sr, t0, gain=1.0: _add_st(self, sl, sr, t0 if REAL[0] else Winv(t0), gain)
-tw = W5(t)                     # 每个采样点对应的“原来的时间”，给按时间算的包络用
+Track.add = lambda self, sig, t0, pan=0.0, gain=1.0: _add(self, sig, MAPT(t0), pan, gain)
+Track.add_st = lambda self, sl, sr, t0, gain=1.0: _add_st(self, sl, sr, MAPT(t0), gain)
+tw = W5(WE(t))                 # 每个采样点对应的“原来的时间”，给按时间算的包络用
 
 # ---------- 音高与主题 ----------
 PENT = [0, 2, 4, 7, 9]
@@ -60,14 +98,14 @@ def line(mode, base, unit, cells):
 def phrase(fn, name, t0, notes, pan=0.0, dyn='arch', **kw):
     """一口气连着奏的乐句。notes: [(开始, 时值, 音高)]，秒，相对 t0。dyn 是这一句里的强弱：arch 中间鼓起来，cresc 渐强，dim 渐弱"""
     s0 = notes[0][0]; ns = [(s - s0, d, p) for s, d, p in notes]
-    for s, d, p in notes: LOG.append((name, (t0 + s) if REAL[0] else Winv(t0 + s), d, float(midi(p))))
+    for s, d, p in notes: LOG.append((name, MAPT(t0 + s), d, float(midi(p))))
     y = fn(ns, **kw)
     if dyn and len(y) > 0.9 * SR:
         x = np.arange(len(y)) / len(y); y = y * {'arch': 0.78 + 0.22 * np.sin(np.pi * x ** 0.85), 'cresc': 0.7 + 0.3 * x, 'dim': 1.0 - 0.3 * x}[dyn]
     tr.add(y, t0 + s0, pan)
 def one(sig, name, tt, p, d=1.0, pan=0.0):
     """单独敲 / 拨的一个音"""
-    LOG.append((name, tt if REAL[0] else Winv(tt), d, float(midi(p)))); tr.add(sig, tt, pan)
+    LOG.append((name, MAPT(tt), d, float(midi(p)))); tr.add(sig, tt, pan)
 
 # 片子从 154 秒加长过。贯穿全片的几条噪声（底噪、水声、窑火的轰鸣）仍按原来的长度生成，再把加长的一截接上
 N_BASE = int(154.0 * SR) + SR * 6
@@ -118,7 +156,7 @@ phrase(xun_phrase, 'xun', 23.8, [(0, 0.9, 'B4'), (0.9, 0.4, 'A4'), (1.3, 1.6, 'F
 
 # ===== 贰 · 甲骨：石磬把主题前半句一下一下敲出来，底下压一个长音；第五个音就是骨头裂开的那一下 =====
 one(qing('B4', 0.12), 'qing', 24.65, 'B4', 1.2, -0.3)
-tr.add(drone('B1', 8.6, 0.045, 2.5, 2.0), 25.4, 0); tr.add(drone('B2', 8.6, 0.016, 2.5, 2.0), 25.4, 0)
+tr.add(splice(drone('B1', 8.6, 0.045, 2.5, 2.0), P1S - 25.4, P1D), 25.4, 0); tr.add(splice(drone('B2', 8.6, 0.016, 2.5, 2.0), P1S - 25.4, P1D), 25.4, 0)   # 跨过甲骨那次停顿，接长
 for tt, p, a in [(26.5, 'F#5', 0.09), (28.35, 'A5', 0.075), (29.28, 'F#5', 0.085)]: one(qing(p, a), 'qing', tt, p, 0.9, 0.2 * np.sin(tt))
 tr.add(jiangu(0.08, 62, 0.5), 29.28, 0)
 tr.add(crackle(1.0, 0.06, 34), 29.45, 0.1)
@@ -155,8 +193,10 @@ for tt, a in [(39.75, 0.07), (40.25, 0.1)]: tr.add(jiangu(a, 62, 0.5), tt, 0)
 bz = 0.575; Z0 = 41.15
 for k, i, a in [(0, 0, 0.12), (2, 3, 0.095), (4, 4, 0.08), (5, 3, 0.08), (6, 2, 0.105)]:
     one(zhong(P(i), a), 'bell', Z0 + k * bz, P(i), 1.0, -0.2 + 0.1 * (k % 3)); one(zhong(P(i - 2), a * 0.55), 'bell', Z0 + k * bz + 0.012, P(i - 2), 1.0, 0.25)
-tr.add(drone('D3', 6.4, 0.03, 1.5, 2.0), 41.6, 0)
-for k, (p, a) in enumerate([('A5', 0.042), ('F#5', 0.04)]): one(zhong(p, a, 3.0, damp=0.55), 'bell', Z0 + (6.5 + 0.5 * k) * bz, p, 0.3, 0.35 - 0.35 * k)   # 盆里那一对鱼转过眼来看它：把刚敲过的最后两个音在高八度轻轻应一遍，一条鱼一声
+tr.add(splice(drone('D3', 6.4, 0.03, 1.5, 2.0), P2S - (41.6 + P1D), P2D), 41.6, 0)   # 跨过铜洗那次停顿，接长
+REAL[0] = 2; T4LOOKR = 44.55 + PAUSES[0][1] + PAUSES[0][2]                      # 盆里那对鱼一前一后转过头来：一条一声，把刚敲过的最后两个音在高八度应一遍
+for (p, a, dt, pan) in [('A5', 0.038, 0.05, -0.3), ('F#5', 0.04, 0.25, 0.3)]: one(zhong(p, a, 3.0, damp=0.55), 'bell', T4LOOKR + dt, p, 0.3, pan)
+REAL[0] = False
 for tt, i, a in [(46.45, 1, 0.085), (47.6, 0, 0.08)]:                                                         # 走了：落回主音
     one(zhong(P(i), a), 'bell', tt, P(i), 1.0, -0.4); one(zhong(P(i - 2), a * 0.55), 'bell', tt + 0.012, P(i - 2), 1.0, 0.1)
 
@@ -485,12 +525,12 @@ tr.add(thump(0.06), T_FIN + 0.3, 0.0)     # 黑卡上的印
 # 逗号活过来：一滴水的轻响，一下小小的摆尾，往左游走
 tr.add(drop(0.05, 740), T_FIN + 1.15, -0.1); tr.add(swish(0.02, 0.3, hi=True), T_FIN + 1.5, -0.3); one(fan('A5', 0.05, 4.0), 'fan', T_FIN + 1.2, 'A5', 0.6, -0.2)
 
-tq = W5(tv(trA.N)); src = 1 - np.clip((tq - T10OFF) / 0.015, 0, 1); trA.L *= src; trA.R *= src
+tq = W5(WE(tv(trA.N))); src = 1 - np.clip((tq - T10OFF) / 0.015, 0, 1); trA.L *= src; trA.R *= src
 AL, AR = mixdown(trA, wet=0.42, ir_dur=3.4, ir_dec=0.95)
 tm = tv(len(AL))
 # 拉平的增益在切断之前算，并且从“吃到最后一颗”起冻结——不让后面的寂静把坏掉那段推响
-gA, ref = level_gain(AL, AR); i0 = int(Winv(T10EAT4 - 0.6) * SR); gA[i0:] = gA[i0]
-tmw = W5(tm); muf = np.clip((tmw - T10OFF) / 0.6, 0, 1) ** 0.7; tail = np.where(tmw < T10OFF, 1.0, np.exp(-np.clip(tmw - T10OFF, 0, None) / 0.42))
+gA, ref = level_gain(AL, AR); i0 = int(WEinv(Winv(T10EAT4 - 0.6)) * SR); gA[i0:] = gA[i0]
+tmw = W5(WE(tm)); muf = np.clip((tmw - T10OFF) / 0.6, 0, 1) ** 0.7; tail = np.where(tmw < T10OFF, 1.0, np.exp(-np.clip(tmw - T10OFF, 0, None) / 0.42))
 AL = (AL * (1 - muf) + lp(lp(AL, 700), 900) * muf) * gA * tail; AR = (AR * (1 - muf) + lp(lp(AR, 700), 900) * muf) * gA * tail
 BL, BR = mixdown(tr, wet=0.42, ir_dur=3.4, ir_dec=0.95, seedL=7, seedR=8)
 # 后一轨（代码站 + 终章）的电平是个定值：敲键盘和那个长音的响度不跟着终章的编配变

@@ -106,20 +106,32 @@ function hanStatic(c,t){c.fillStyle='#000';c.strokeStyle='#000';c.lineCap='round
   for(const [fx0,fy,fl,dir,sp] of SMALL3){let fx=fx0-dir*sp*14*(t-31);fx=((fx+245)%490+490)%490-245;const ph=t*2*Math.PI*1.4+fx0;
     const p=procPose(fx,fy+2*Math.sin(t*0.9+fx0),dir>0?Math.PI:0,fl,0,0.9,ph,t);if(dir<0)for(const q of p.sp){q.nx=-q.nx;q.ny=-q.ny;}drawHanFish(c,p);}
   c.restore();}
+// 渔人：汉画像石里的人是平的剪影，但轮廓是活的——背是一道弧，跪坐着、膝盖朝前，侧脸、戴斗笠；身上几道刻出来的阴线（腰带、膝褶、眼睛）
+// 底边是圆的、压在船舷后面：起罾往后仰时不会翘出角来
+function hanFisher(c){c.beginPath();c.moveTo(-24,26);c.bezierCurveTo(-31,8,-27,-14,-16,-27);c.bezierCurveTo(-12,-32,-6,-34,-2,-33);c.lineTo(3,-31);
+  c.bezierCurveTo(9,-24,11,-12,10,-2);c.bezierCurveTo(16,2,24,6,26,14);c.bezierCurveTo(27,20,22,26,14,27);c.bezierCurveTo(4,29,-14,29,-24,26);c.closePath();c.fill();
+  c.beginPath();c.arc(-2,-41,7.5,0,7);c.fill();c.beginPath();c.moveTo(4,-44);c.lineTo(8.5,-40.5);c.lineTo(4.5,-38.3);c.closePath();c.fill();
+  c.beginPath();c.moveTo(-19,-44);c.quadraticCurveTo(-4,-62,15,-45);c.quadraticCurveTo(-2,-49.5,-19,-44);c.closePath();c.fill();
+  c.save();c.globalCompositeOperation='destination-out';c.lineWidth=1.3;c.beginPath();c.moveTo(-22,-6);c.quadraticCurveTo(-6,-9,9,-7);c.stroke();
+  c.beginPath();c.moveTo(-16,9);c.quadraticCurveTo(4,4,22,11);c.stroke();
+  c.beginPath();c.arc(1.2,-43,1.1,0,7);c.fill();c.restore();}
 function hanDynamic(c,t){c.fillStyle='#000';c.strokeStyle='#000';c.lineCap='round';c.lineJoin='round';
   const B=boat3(t);const [tx,ty]=NETTIP(t);
   // 船和渔人：一起晃；起罾时整个人往后仰
-  c.save();c.translate(-70,22+B.dy);c.rotate(B.rot);c.translate(70,-22);
-  c.beginPath();c.moveTo(-150,12);c.quadraticCurveTo(-140,30,-120,30);c.lineTo(-20,30);c.quadraticCurveTo(0,30,8,10);c.lineTo(-6,16);c.lineTo(-138,16);c.closePath();c.fill();
   const lean=-0.28*smooth(T3LIFT0-0.15,T3LIFT0+0.3,t)*(1-0.6*smooth(T3LIFT1+0.2,T3LIFT1+1.2,t));
-  c.save();c.translate(-62,14);c.rotate(lean);c.translate(0,-14);c.beginPath();c.moveTo(-26,16);c.quadraticCurveTo(-30,-14,-12,-32);c.lineTo(8,-32);c.quadraticCurveTo(22,-12,20,16);c.closePath();c.fill();
-  c.beginPath();c.arc(-2,-42,10,0,7);c.fill();c.beginPath();c.moveTo(-8,-50);c.lineTo(4,-62);c.lineTo(10,-48);c.closePath();c.fill();
-  c.restore();c.restore();
+  c.save();c.translate(-70,22+B.dy);c.rotate(B.rot);c.translate(70,-22);
+  c.save();c.translate(-62,14);c.rotate(lean);c.translate(0,-14);hanFisher(c);c.restore();
+  c.beginPath();c.moveTo(-150,12);c.quadraticCurveTo(-140,30,-120,30);c.lineTo(-20,30);c.quadraticCurveTo(0,30,8,10);c.lineTo(-6,16);c.lineTo(-138,16);c.closePath();c.fill();
+  c.restore();
   // 杆：支点在船头（船的变换在局部坐标里算）
   const Bm=new DOMMatrix().translate(-70,22+B.dy).rotate(B.rot*180/Math.PI).translate(70,-22);
   const Fm=Bm.translate(-62,14).rotate(lean*180/Math.PI).translate(0,-14);
   const pv=new DOMPoint(-40,-14).matrixTransform(Bm);const dx=tx-pv.x,dy=ty-pv.y;const l=Math.hypot(dx,dy);const ux=dx/l,uy=dy/l;const back=[pv.x-ux*34,pv.y-uy*34];
   c.lineWidth=3;c.beginPath();c.moveTo(back[0],back[1]);c.lineTo(tx,ty);c.stroke();
+  // 两只手握在杆上：后手靠近胸口，前手往前伸；起罾时跟着杆抬起来
+  for(const [sx,sy,off,w0] of [[-9,-25,-10,6.2],[-4,-27,16,5.6]]){const sh=new DOMPoint(sx,sy).matrixTransform(Fm);const hx=pv.x+ux*off,hy=pv.y+uy*off;
+    const mx=(sh.x+hx)/2,my=(sh.y+hy)/2;let nx=-(hy-sh.y),ny=hx-sh.x;const nl=Math.hypot(nx,ny)||1;nx/=nl;ny/=nl;if(ny<0){nx=-nx;ny=-ny;}const ex=mx+nx*5,ey=my+ny*5;
+    c.lineWidth=w0;c.beginPath();c.moveTo(sh.x,sh.y);c.lineTo(ex,ey);c.stroke();c.lineWidth=w0*0.72;c.beginPath();c.moveTo(ex,ey);c.lineTo(hx,hy);c.stroke();c.beginPath();c.arc(hx,hy,2.7,0,7);c.fill();}
   // 手臂：从肩膀拉住杆尾（肩膀跟着身体后仰）
   const shp=new DOMPoint(4,-22).matrixTransform(Fm);
   c.lineWidth=5;c.beginPath();c.moveTo(shp.x,shp.y);c.quadraticCurveTo((shp.x+back[0])/2,(shp.y+back[1])/2-6,back[0],back[1]);c.stroke();

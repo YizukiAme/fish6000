@@ -1,8 +1,8 @@
 // ================= 预览播放器 =================
 // 直接用浏览器打开 film.html 时出现；渲染脚本打开时（无头浏览器 / 地址里带 ?render）不出现，不影响出片。
 (()=>{if(navigator.webdriver||/[?&]render/.test(location.search))return;
-const CHAP=[[0,'壹 · 彩陶'],[23.8,'贰 · 甲骨'],[32.4,'叁 · 拓片'],[40.7,'肆 · 铜洗'],[47.8,'伍 · 磁州窑'],[57.5,'陆 · 宋画'],[75.1,'柒 · 青花'],
-  [103.2,'捌 · 年画'],[111.5,'玖 · 剪纸'],[120.8,'拾 · 像素'],[139.6,'拾壹 · 代码'],[155.9,'终章']];
+const CHAP=[[0,'壹 · 彩陶'],[23.8,'贰 · 甲骨'],[33.25,'叁 · 拓片'],[41.55,'肆 · 铜洗'],[49.75,'伍 · 磁州窑'],[59.45,'陆 · 宋画'],[77.05,'柒 · 青花'],
+  [105.15,'捌 · 年画'],[113.45,'玖 · 剪纸'],[122.75,'拾 · 像素'],[141.55,'拾壹 · 代码'],[157.85,'终章']];
 const st=document.createElement('style');st.textContent=`
 html,body{height:100%;overflow:hidden;font:14px/1.4 system-ui,"PingFang SC","Microsoft YaHei",sans-serif;color:#e8e2d6}
 #cv{position:fixed;inset:0;margin:auto;width:min(100vw,177.78vh);height:min(56.25vw,100vh)}

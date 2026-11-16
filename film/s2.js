@@ -138,9 +138,9 @@ function drawS2Panel(t,cam,TR){const x0=S2X-S2W/2,y0=S2Y-S2W/2;panelShadow(x0,y0
     ctx.save();ctx.translate(-0.7,0.8);ctx.strokeStyle='rgba(255,246,226,0.45)';ctx.lineWidth=0.6;ctx.stroke();ctx.restore();return sub[sub.length-1];};
   const ps=smooth(T2C,T2C+0.12,t),pb=smooth(T2C+0.16,T2C+0.3,t);
   {const f=1-smooth(T2C,T2C+0.25,t);if(f>0&&t>=T2C){ctx.save();ctx.globalCompositeOperation='lighter';const g3=ctx.createRadialGradient(40,12,0,40,12,26);g3.addColorStop(0,`rgba(255,240,210,${0.9*f})`);g3.addColorStop(1,'rgba(255,200,120,0)');ctx.fillStyle=g3;ctx.fillRect(14,-14,52,52);ctx.restore();}}const tips=[crack(CRK_NEW_STEM,ps),crack(CRK_NEW_STEM2,ps),crack(CRK_NEW_BR,pb)];
-  const r=rng(Math.floor(t*30));for(const [tp,t0] of [[tips[0],T2C],[tips[1],T2C],[tips[2],T2C+0.17]]){if(!tp)continue;const d=t-t0;if(d>0.45)continue;for(let i=0;i<5;i++){ctx.fillStyle=`rgba(250,240,215,${0.8*(1-d/0.45)})`;ctx.beginPath();ctx.arc(tp[0]+(r()-.5)*10*(0.3+d*3),tp[1]+(r()-.5)*10*(0.3+d*3)-d*8,0.5+r()*0.8,0,7);ctx.fill();}}
+  const r=rng(Math.floor(TREAL*30));for(const [tp,t0] of [[tips[0],T2C],[tips[1],T2C],[tips[2],T2C+0.17]]){if(!tp)continue;const d=t-t0;if(d>0.45)continue;for(let i=0;i<5;i++){ctx.fillStyle=`rgba(250,240,215,${0.8*(1-d/0.45)})`;ctx.beginPath();ctx.arc(tp[0]+(r()-.5)*10*(0.3+d*3),tp[1]+(r()-.5)*10*(0.3+d*3)-d*8,0.5+r()*0.8,0,7);ctx.fill();}}
   // 烟
-  const sm=smooth(29.9,30.3,t)*(1-smooth(31.2,32.4,t));if(sm>0){for(let i=0;i<7;i++){const ph=t*0.9+i*0.37;const k=(ph%1);const yy=12-k*70,xx=40+8*Math.sin(k*6+i)+k*10;ctx.fillStyle=`rgba(200,196,188,${0.12*sm*(1-k)})`;ctx.beginPath();ctx.ellipse(xx,yy,4+k*14,3+k*9,k*2,0,7);ctx.fill();}}
+  const sm=smooth(29.9,30.3,t)*(1-smooth(31.2,32.4,t));if(sm>0){for(let i=0;i<7;i++){const ph=TREAL*0.9+i*0.37;const k=(ph%1);const yy=12-k*70,xx=40+8*Math.sin(k*6+i)+k*10;ctx.fillStyle=`rgba(200,196,188,${0.12*sm*(1-k)})`;ctx.beginPath();ctx.ellipse(xx,yy,4+k*14,3+k*9,k*2,0,7);ctx.fill();}}
   ctx.restore();ctx.restore();
   ctx.strokeStyle='rgba(70,60,45,0.35)';ctx.lineWidth=1;ctx.strokeRect(x0,y0,S2W,S2W);}
 // 甲骨画风：在甲上是刻的（涂朱），甲外是毛笔朱书

@@ -78,9 +78,15 @@ function bendPose(p,u0,th){const N=p.N,piv=p.sp[Math.round(u0*N)];const sp=p.sp.
   for(let i=0;i<=N;i++){const A=sp[Math.max(0,i-1)],B=sp[Math.min(N,i+1)];let dx=A.x-B.x,dy=A.y-B.y;const l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;const sg=(p.sp[i].nx*(-dy)+p.sp[i].ny*dx)>=0?1:-1;sp[i].nx=-dy*sg;sp[i].ny=dx*sg;}
   return{...p,sp};}
 const T4LOOK0=44.55,T4LOOK1=45.1,T4GONE=46.6;
-function twinPoses(t){const look=smooth(T4LOOK0,T4LOOK1,t)*(1-smooth(T4GONE+0.2,T4GONE+1.6,t));const follow=smooth(46.0,46.7,t)*(1-smooth(48.2,49.6,t));
-  const lf=bendPose(straightPose(S4X-66,S4Y-66,-Math.PI/2,124,true),0.4,0.42*look-0.5*follow);
-  const rt=bendPose(straightPose(S4X+66,S4Y-66,-Math.PI/2,124,false),0.4,-0.42*look);
+// 那对鱼的反应：一条先察觉，慢慢把头转过来；另一条晚 0.2 秒跟着转。转的时候尾巴往反方向带一下，最后稍微过头一点再落定——一次转完，不点头
+// （真实时间：主角正游到和它们并排时开始；T4LOOK0 加上前面甲骨那次停顿）
+function lookCurve(q){if(q<=0)return 0;return smooth(0,0.75,q)+0.07*Math.sin(Math.PI*clamp((q-0.5)/0.6));}
+function bendTail(p,u1,th){const N=p.N,piv=p.sp[Math.round(u1*N)];const sp=p.sp.map((q,i)=>{const u=i/N;if(u<=u1)return{...q};const a=th*Math.pow((u-u1)/(1-u1),1.2);const dx=q.x-piv.x,dy=q.y-piv.y;const c=Math.cos(a),s=Math.sin(a);return{x:piv.x+dx*c-dy*s,y:piv.y+dx*s+dy*c};});
+  for(let i=0;i<=N;i++){const A=sp[Math.max(0,i-1)],B=sp[Math.min(N,i+1)];let dx=A.x-B.x,dy=A.y-B.y;const l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;const sg=(p.sp[i].nx*(-dy)+p.sp[i].ny*dx)>=0?1:-1;sp[i].nx=-dy*sg;sp[i].ny=dx*sg;}
+  return{...p,sp};}
+function twinPoses(t){const fade=1-smooth(T4GONE+0.2,T4GONE+1.6,t),L0=T4LOOK0+PAUSES[0].A+PAUSES[0].H;const la=lookCurve(TREAL-L0)*fade,lb=lookCurve(TREAL-L0-0.2)*fade;const follow=smooth(46.0,46.7,t)*(1-smooth(48.2,49.6,t));
+  const lf=bendTail(bendPose(straightPose(S4X-66,S4Y-66,-Math.PI/2,124,true),0.45,0.58*la-0.5*follow),0.62,-0.16*la);
+  const rt=bendTail(bendPose(straightPose(S4X+66,S4Y-66,-Math.PI/2,124,false),0.45,-0.58*lb),0.62,0.16*lb);
   return[lf,rt];}
 function drawS4Panel(t,cam,TR){const x0=S4X-S4W/2,y0=S4Y-S4W/2;panelShadow(x0,y0,S4W,S4W);
   ctx.save();ctx.beginPath();ctx.rect(x0,y0,S4W,S4W);ctx.clip();

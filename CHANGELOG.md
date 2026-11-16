@@ -2,6 +2,16 @@
 
 English · [中文](CHANGELOG.zh-CN.md)
 
+## [v1.5] — 2026-11-16
+
+- Add brief holds after the oracle-bone crack and when the three fish meet in the bronze basin, while smoke and the twin fish's reactions continue.
+- Redraw the Han fisherman with a kneeling silhouette, a bamboo hat, and hands that follow the lifting pole.
+- Stagger the bronze twins' head turns, with a gentle tail response and settling motion.
+- Redraw the game fish for each era: monochrome, four-tone green, 16-color pixel art, and shaded sprites. Keep their backs upright through turns and refine eyes, fins, and smaller fish.
+- Add a detailed CRT housing, console, and wired controller to the pixel station.
+- Soften the xun's breath texture and extend sustained sounds across the new pauses.
+- Extend the film to 2:53.35 and update chapter timings and documentation.
+
 ## [v1.4] — 2026-11-16
 
 - Give the pixel station four distinct games: a dot maze, scrolling coin collection, a fishhook escape, and chasing smaller fish (2:01–2:19).
@@ -52,3 +62,5 @@ English · [中文](CHANGELOG.zh-CN.md)
 [v1.3]: https://github.com/YizukiAme/fish6000/compare/v1.2...v1.3
 
 [v1.4]: https://github.com/YizukiAme/fish6000/compare/v1.3...v1.4
+
+[v1.5]: https://github.com/YizukiAme/fish6000/compare/v1.4...v1.5

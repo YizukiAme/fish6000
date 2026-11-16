@@ -21,6 +21,104 @@ const DIG={0:'111101101101111',1:'010110010010111',2:'111001111100111',3:'111001
 function pixText(c,s,x,y,px,col){c.fillStyle=col;let cx=x;for(const ch of s){const g=DIG[ch];if(!g){cx+=2*px;continue;}for(let i=0;i<15;i++)if(g[i]==='1')c.fillRect(cx+(i%3)*px,y+Math.floor(i/3)*px,px,px);cx+=4*px;}}
 // 把主角画进某一级的小画布（缓冲坐标 → 小画布坐标）
 function fishToBuf(p){const sc=SBW/SCR.w;const ox=SCR.x-SCR.w/2,oy=SCR.y-SCR.h/2;return{...p,L:p.L*sc,sp:p.sp.map(q=>({x:(q.x-ox)*sc,y:(q.y-oy)*sc,nx:q.nx,ny:q.ny}))};}
+// ---------- 游戏里的那条鱼：还是那条鲤鱼，只是换成那一年游戏机的画法 ----------
+// 身形、鳍、眼睛的位置，都是剪纸那一站同一副鲤鱼的比例，沿同一根脊线画；变的只是画法：
+// 1980 一块白的剪影，一个黑点当眼睛；1989 四级绿：深色的身子、浅色的肚皮；1995 16 色像素画：橙身（黄和浅红按棋盘格抖出来）、褐色的背、鳞、鳍条；
+// 这三关是像素画：边是硬的，颜色只用那台机器有的那几种，外面描一圈一像素的黑边，眼睛、鳃、鳍条、鳞一个像素一个像素地点。
+// 2003 是预渲染的 3D 精灵：顺着身子的明暗、一道高光、背上一线逆光、半透明的鳍。鱼在画布上越大细节越多（鳞、侧线够大才画——游戏里叫 LOD）
+// 背总朝上：鱼掉头时，身体的“上”会跟着路线翻过去；游戏里的鱼不会肚皮朝天，所以这时翻一个身：R 从 1 变到 -1（像素画一下子镜像，2003 那条用 0.18 秒转过去）
+let ROLLC=null;const ROLL_T0=117.5,ROLL_DT=1/120;
+function gameRoll(t){if(!ROLLC){const n=Math.ceil((168.5-ROLL_T0)/ROLL_DT);ROLLC=new Float32Array(n);for(let i=0;i<n;i++){const p=heroPoseNow(ROLL_T0+i*ROLL_DT);ROLLC[i]=spineAt(p,0.4).ny<0?1:-1;}}
+  let s=0,k=0;for(let j=0;j<22;j++){const i=Math.round((t-ROLL_T0)/ROLL_DT)-j;if(i>=0&&i<ROLLC.length){s+=ROLLC[i];k++;}}const a=k?s/k:1;return Math.sign(a)*Math.pow(Math.abs(a),0.6);}
+const SPRC={};function sprCv(w,h){const k=w+'x'+h;if(!SPRC[k]){const cv=mk(w,h);SPRC[k]={c:cv,x:cv.getContext('2d',{willReadFrequently:true})};}return SPRC[k];}
+function gameFish(c,b,mode,R=1){const L=b.L,pr=PROF_CUT,m=c.getTransform(),px=Math.hypot(m.a,m.b),Lp=L*px,lw=1/px;   // px：一个单位是几个像素；Lp：鱼有多少像素长；lw：一像素宽的线
+  R=mode==='hi'?Math.sign(R||1)*(0.3+0.7*Math.abs(R)):(R<0?-1:1);   // 翻身：像素画的精灵是一下子镜像过来的；预渲染的那条转过去，最薄也有背那么宽（不会薄成一根线）
+  let g=c;   // 往哪张画布上画（像素画先画在一张小画布上，再逐像素收拾）
+  const S=u=>spineAt(b,u);
+  const BA=(u,v)=>{const s=S(u),w=(v>=0?pr.d(u,L):pr.b(u,L))*v*R;return[s.x+s.nx*w,s.y+s.ny*w];};
+  const FIN=(u0,u1,hm,sd,bk)=>{const base=[],out=[];for(let i=0;i<=16;i++){const v=i/16,u=lerp(u0,u1,v),q=BA(u,sd*0.94),s=S(u),h=hm*L*Math.pow(Math.sin(Math.PI*v),0.75)*(1-0.3*v);base.push(q);out.push([q[0]+s.nx*sd*h*R-s.tx*bk*h*0.5,q[1]+s.ny*sd*h*R-s.ty*bk*h*0.5]);}return{base,out};};
+  const dors=FIN(0.27,0.58,0.1,1,1),anal=FIN(0.6,0.71,0.065,-1,1.4),pelv=FIN(0.34,0.43,0.07,-1,1.6);
+  // 尾：在尾柄上搭一个小坐标（和剪纸那条一样），身子弯得再厉害，尾巴也不拧
+  const ta=S(0.72),tz=S(1);let tx=tz.x-ta.x,ty=tz.y-ta.y;const tl=Math.hypot(tx,ty)||1;tx/=tl;ty/=tl;let nx=-ty,ny=tx;const s8=S(0.8);if(nx*s8.nx+ny*s8.ny<0){nx=-nx;ny=-ny;}
+  const bt=BA(0.8,1),bb=BA(0.8,-1),o=[(bt[0]+bb[0])/2,(bt[1]+bb[1])/2],F=(f,h)=>[o[0]+tx*f*L+nx*h*L*R,o[1]+ty*f*L+ny*h*L*R];
+  const tail=()=>{const U=F(0.2,0.2),N=F(0.115,0),D=F(0.2,-0.19);let k=F(0.07,0.1);g.beginPath();g.moveTo(bt[0],bt[1]);g.quadraticCurveTo(k[0],k[1],U[0],U[1]);k=F(0.14,0.075);g.quadraticCurveTo(k[0],k[1],N[0],N[1]);k=F(0.14,-0.07);g.quadraticCurveTo(k[0],k[1],D[0],D[1]);k=F(0.07,-0.095);g.quadraticCurveTo(k[0],k[1],bb[0],bb[1]);g.closePath();};
+  const M=40,top=[],bot=[];for(let i=0;i<=M;i++){const u=0.8*i/M;top.push(BA(u,1));bot.push(BA(u,-1));}
+  const body=()=>{g.beginPath();top.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));for(let i=M;i>=0;i--)g.lineTo(bot[i][0],bot[i][1]);g.closePath();};
+  const band=(u0,u1,v0,v1)=>{g.beginPath();for(let i=0;i<=24;i++){const q=BA(lerp(u0,u1,i/24),v0);i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]);}for(let i=24;i>=0;i--){const q=BA(lerp(u0,u1,i/24),v1);g.lineTo(q[0],q[1]);}g.closePath();};
+  const fp=f=>{g.beginPath();f.base.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));for(let i=f.out.length-1;i>=0;i--)g.lineTo(f.out[i][0],f.out[i][1]);g.closePath();};
+  const line=(pts,col,w)=>{g.strokeStyle=col;g.lineWidth=w;g.beginPath();pts.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.stroke();};
+  const rayPts=(f,st,k)=>{const out=[];for(let i=st;i<f.base.length-1;i+=st)out.push([f.base[i],[lerp(f.base[i][0],f.out[i][0],k),lerp(f.base[i][1],f.out[i][1],k)]]);return out;};
+  const tailRayPts=n=>{const out=[];for(let j=0;j<n;j++){const h=lerp(0.17,-0.16,j/(n-1));out.push([F(0.01,h*0.25),F(0.18-Math.abs(h)*0.33,h*0.98)]);}return out;};
+  const gill=[BA(0.19,0.8),BA(0.215,0.4),BA(0.225,0),BA(0.215,-0.4),BA(0.19,-0.78)];
+  // 胸鳍：长在鳃后面、肚子这一侧，往后下方伸，跟着划水轻轻扇
+  const pec=()=>{const s=S(0.22),q=BA(0.22,-0.42),a=0.6+0.22*Math.sin(b.t*2*Math.PI*1.2)*(1-0.6*b.sn);const dx=-s.tx*Math.cos(a)-s.nx*R*Math.sin(a),dy=-s.ty*Math.cos(a)-s.ny*R*Math.sin(a),l=L*0.14,w=l*0.32;
+    const tp=[q[0]+dx*l,q[1]+dy*l],k1=[q[0]+dx*l*0.5-dy*w,q[1]+dy*l*0.5+dx*w],k2=[q[0]+dx*l*0.5+dy*w*0.4,q[1]+dy*l*0.5-dx*w*0.4];g.beginPath();g.moveTo(q[0],q[1]);g.quadraticCurveTo(k1[0],k1[1],tp[0],tp[1]);g.quadraticCurveTo(k2[0],k2[1],q[0],q[1]);g.closePath();return{q,tp};};
+  const h0=S(0),h1=S(0.06),hl=Math.hypot(h0.x-h1.x,h0.y-h1.y)||1,fw=[(h0.x-h1.x)/hl,(h0.y-h1.y)/hl];   // fw：朝鱼头的方向
+  if(mode==='hi'){// ===== 2003：预渲染的 3D 精灵 =====
+    const eye=BA(0.085,0.3),ew=Math.max(lw,L*0.004),fin='rgba(206,86,40,0.6)',ray='rgba(112,34,12,0.42)',rim='rgba(255,204,150,0.5)',edge='rgba(66,22,8,0.5)';
+    g.save();g.lineJoin='round';g.lineCap='round';
+    for(const f of [dors,anal,pelv]){fp(f);g.fillStyle=fin;g.fill();if(Lp>70)for(const r of rayPts(f,2,0.9))line(r,ray,Math.max(lw,L*0.004));line(f.out,rim,Math.max(lw,L*0.005));fp(f);g.lineWidth=ew;g.strokeStyle=edge;g.stroke();}
+    tail();g.fillStyle=fin;g.fill();if(Lp>70)for(const r of tailRayPts(9))line(r,ray,Math.max(lw,L*0.004));tail();g.lineWidth=ew;g.strokeStyle=edge;g.stroke();
+    body();g.fillStyle='#d9772f';g.fill();
+    g.save();body();g.clip();
+      g.filter=`blur(${(Lp*0.05).toFixed(1)}px)`;
+      band(0,0.8,1.25,0.28);g.fillStyle='rgba(112,38,14,0.9)';g.fill();               // 背：暗
+      band(0.02,0.78,-0.3,-1.25);g.fillStyle='rgba(250,222,170,0.95)';g.fill();       // 肚皮：亮
+      band(0.6,0.82,1.25,-1.25);g.fillStyle='rgba(110,36,12,0.3)';g.fill();           // 往尾巴去暗一点
+      g.filter=`blur(${(Lp*0.022).toFixed(1)}px)`;
+      band(0.14,0.54,0.68,0.4);g.fillStyle='rgba(255,244,214,0.5)';g.fill();          // 高光：顺着上半身一道
+      g.filter=`blur(${(Lp*0.006).toFixed(1)}px)`;
+      line(top.slice(2,38),rim,L*0.03);                                                // 背上一线逆光
+      g.filter='none';
+      if(Lp>150){for(const v of [0.6,0.3,0,-0.3,-0.6])for(let u=0.25+(Math.abs(v)===0.3?0.0225:0);u<0.76;u+=0.045){const q=BA(u,v),s=S(u),an=Math.atan2(-s.ty,-s.tx);
+        g.lineWidth=Math.max(lw,L*0.005);g.strokeStyle='rgba(100,34,12,0.2)';g.beginPath();g.arc(q[0],q[1],0.022*L,an-1.3,an+1.3);g.stroke();
+        g.strokeStyle='rgba(255,236,200,0.13)';g.beginPath();g.arc(q[0]-s.tx*0.006*L,q[1]-s.ty*0.006*L,0.022*L,an-1.1,an+1.1);g.stroke();}}
+      if(Lp>80){const ll=[];for(let i=0;i<=16;i++)ll.push(BA(lerp(0.24,0.78,i/16),0.06));line(ll,'rgba(96,34,12,0.32)',Math.max(lw,L*0.005));}   // 侧线
+      line([BA(0.185,0.8),BA(0.215,0.45),BA(0.232,0),BA(0.215,-0.42),BA(0.185,-0.76)],'rgba(96,32,10,0.45)',Math.max(lw,L*0.007));   // 鳃盖：一道往后鼓的弧
+    g.restore();
+    body();g.lineWidth=ew;g.strokeStyle=edge;g.stroke();
+    pec();g.fillStyle='rgba(226,112,52,0.75)';g.fill();g.lineWidth=ew;g.strokeStyle=edge;g.stroke();
+    // 眼：金色的虹膜、黑瞳仁、一个小亮点
+    g.fillStyle='#c99a42';g.beginPath();g.arc(eye[0],eye[1],Math.max(1.3*lw,L*0.027),0,7);g.fill();
+    g.fillStyle='#140b06';g.beginPath();g.arc(eye[0]+fw[0]*L*0.003,eye[1]+fw[1]*L*0.003,Math.max(0.9*lw,L*0.017),0,7);g.fill();
+    {const s=S(0.085);g.fillStyle='rgba(255,255,255,0.75)';g.beginPath();g.arc(eye[0]+fw[0]*L*0.007+s.nx*R*L*0.007,eye[1]+fw[1]*L*0.007+s.ny*R*L*0.007,Math.max(0.5*lw,L*0.005),0,7);g.fill();}
+    line([BA(0.004,0),BA(0.04,-0.3)],'rgba(70,24,8,0.7)',Math.max(lw,L*0.006));     // 嘴
+    g.restore();return;}
+  // ===== 1980 / 1989 / 1995：像素画 =====
+  const W0=c.canvas.width,H0=c.canvas.height,SP=sprCv(W0,H0);g=SP.x;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W0,H0);g.setTransform(m.a,m.b,m.c,m.d,m.e,m.f);
+  const dev=q=>[m.a*q[0]+m.c*q[1]+m.e,m.b*q[0]+m.d*q[1]+m.f];
+  // 先填颜色块：1980 全白；1989 用四级灰（之后量化成四级绿）；1995 用意思上的颜色（橙 #ffaa46 之后按棋盘格抖成黄和浅红）
+  const C=mode==='mono'?{fin:'#fff',body:'#fff'}:mode==='gb'?{fin:'#555',body:'#555',belly:'#fff'}:{fin:'#ff5555',body:'#ffaa46',back:'#aa5500',belly:'#ffff55'};
+  for(const f of mode==='mono'?[dors]:mode==='gb'?[dors,anal]:[dors,anal,pelv]){fp(f);g.fillStyle=C.fin;g.fill();}tail();g.fillStyle=C.fin;g.fill();   // 鱼越小鳍越少：1980 的剪影上一像素的腹鳍、臀鳍像两只脚
+  body();g.fillStyle=C.body;g.fill();
+  if(C.back||C.belly){g.save();body();g.clip();if(C.back){band(0,0.8,1.25,0.45);g.fillStyle=C.back;g.fill();}if(C.belly){band(0.04,0.77,-0.4,-1.25);g.fillStyle=C.belly;g.fill();}g.restore();}
+  if(mode==='ega'){pec();g.fillStyle=C.fin;g.fill();}
+  // 逐像素：盖住一半以上的算鱼，取调色板里的颜色；不到一半的算水
+  const img=g.getImageData(0,0,W0,H0),d=img.data,N0=W0*H0,A=new Uint8Array(N0);
+  for(let i=0;i<N0;i++){const j=4*i;if(d[j+3]<128){d[j+3]=0;continue;}A[i]=1;let r=d[j],gg=d[j+1],bl=d[j+2];
+    if(mode==='mono')r=gg=bl=255;
+    else if(mode==='gb')r=gg=bl=clamp(Math.round((r*0.3+gg*0.59+bl*0.11)/85),0,3)*85;
+    else if(Math.abs(r-255)+Math.abs(gg-170)+Math.abs(bl-70)<48)[r,gg,bl]=((i%W0)+((i/W0)|0))&1?[255,255,85]:[255,85,85];
+    else{let best=0,bd=1e9;for(let k=0;k<16;k++){const P=PAL_EGA[k],dd=(r-P[0])**2+(gg-P[1])**2+(bl-P[2])**2;if(dd<bd){bd=dd;best=k;}}[r,gg,bl]=PAL_EGA[best];}
+    d[j]=r;d[j+1]=gg;d[j+2]=bl;d[j+3]=255;}
+  // 外面描一圈一像素的黑边（1980 是一块剪影，不描）
+  if(mode!=='mono')for(let i=0;i<N0;i++){if(A[i])continue;const xx=i%W0,yy=(i/W0)|0;if((xx>0&&A[i-1])||(xx<W0-1&&A[i+1])||(yy>0&&A[i-W0])||(yy<H0-1&&A[i+W0])){const j=4*i;d[j]=d[j+1]=d[j+2]=0;d[j+3]=255;}}
+  g.putImageData(img,0,0);g.setTransform(1,0,0,1,0,0);
+  const dot=(X,Y,col)=>{g.fillStyle=col;g.fillRect(X,Y,1,1);};
+  const inFish=(X,Y)=>X>=0&&Y>=0&&X<W0&&Y<H0&&A[Y*W0+X]===1;
+  const pline=(pts,col)=>{for(let j=1;j<pts.length;j++){const a=dev(pts[j-1]),z=dev(pts[j]);const n=Math.max(1,Math.ceil(Math.hypot(z[0]-a[0],z[1]-a[1])*1.5));for(let i=0;i<=n;i++){const X=Math.floor(lerp(a[0],z[0],i/n)),Y=Math.floor(lerp(a[1],z[1],i/n));if(inFish(X,Y))dot(X,Y,col);}}};
+  if(mode==='ega'){// 鳍条、鳞（剪纸那条鱼身上的月牙，这里是一个个三像素的小弧）、鳃
+    for(const f of [dors,anal])for(const r of rayPts(f,3,0.85))pline(r,'#aa0000');for(const r of tailRayPts(5))pline(r,'#aa0000');
+    for(const v of [0.18,-0.18])for(let u=0.3+(v<0?0.035:0);u<0.75;u+=0.07){const q=dev(BA(u,v)),s=S(u);const bx=-s.tx,by=-s.ty,nnx=s.nx*R,nny=s.ny*R;   // 弧往尾巴那边鼓
+      for(const [a,k] of [[0.9,0],[0.35,1.1],[0.35,-1.1]]){const X=Math.floor(q[0]+bx*a+nnx*k),Y=Math.floor(q[1]+by*a+nny*k);if(inFish(X,Y))dot(X,Y,'#aa5500');}}
+    pline([BA(0.2,0.6),BA(0.222,0.2),BA(0.218,-0.3)],'#aa5500');}   // 鳃：褐色、只到身侧（一整条黑线在鱼朝上时像咧着嘴）
+  // 眼睛：落在头里面（鱼小的时候往后、往脊线挪一点，免得一个像素的眼睛把头的边咬掉）
+  const es=mode==='mono'?1:2,cand=[[0.085,0.3],[0.1,0.24],[0.115,0.17],[0.13,0.1],[0.15,0.04],[0.17,0]];
+  let ei=Lp<16?2:Lp<32?1:0,E0=null;for(;ei<cand.length;ei++){const q=dev(BA(...cand[ei])),X=Math.round(q[0]-es/2),Y=Math.round(q[1]-es/2);let ok=true;
+    for(let yy=-1;yy<=es&&ok;yy++)for(let xx=-1;xx<=es;xx++){if((xx<0||xx>=es)&&(yy<0||yy>=es))continue;if(!inFish(X+xx,Y+yy)){ok=false;break;}}if(ok||ei===cand.length-1){E0=[X,Y];break;}}
+  if(mode==='mono')dot(E0[0],E0[1],'#000');
+  else{g.fillStyle='#fff';g.fillRect(E0[0],E0[1],2,2);const pX=E0[0]+(fw[0]>0?1:0),pY=E0[1]+(Math.abs(fw[1])>0.7?(fw[1]>0?1:0):1);dot(pX,pY,'#000');}   // 瞳仁在眼睛里靠前、靠下的那个像素：看着前面
+  c.save();c.setTransform(1,0,0,1,0,0);c.drawImage(SP.c,0,0);c.restore();}
 // ---------- 每一关是那一年的一种游戏 ----------
 // 1980 吃豆：一排豆，主题的十个音一个音吃一颗（吃豆的“咔”就是旋律）  1989 横版：背景跟着鱼往后卷，一路吃金币
 // 1995 躲钩子：鱼钩垂下来，鱼一惊、扭开，钩子空提上去                   2003 大鱼吃小鱼：吃一条长大一点
@@ -62,10 +160,13 @@ function gameLayer(k,t,c,p,ta){const E=EV10();
       c.strokeStyle='#b8b8c8';c.lineWidth=5;c.beginPath();c.moveTo(bx,by);c.lineTo(bx,by+22);c.arc(bx-10,by+22,10,0,Math.PI);c.lineTo(bx-20,by+12);c.stroke();
       if(t<HOOK10.tStrike+0.05){c.fillStyle='#ff6aa0';for(let i=0;i<4;i++){c.beginPath();c.arc(bx-6-4*Math.sin(ta*9+i),by+26+i*7,6,0,7);c.fill();}}}}
   if(k===3){for(const m of E.minnows){if(t>=m.te)continue;const dt=t-m.te;const nx=-m.d[1],ny=m.d[0];const wob=3*Math.sin(ta*6+m.te*5);
-      const [x,y]=toBuf(m.w[0]+m.d[0]*m.v*dt+nx*wob,m.w[1]+m.d[1]*m.v*dt+ny*wob);const a=Math.atan2(m.d[1],m.d[0]);c.save();c.translate(x,y);c.rotate(a);c.scale(1.7,1.7);
-      c.fillStyle='#4f86b8';c.beginPath();c.moveTo(-14,0);c.lineTo(-30,-11+3*Math.sin(ta*14+m.te));c.lineTo(-30,11+3*Math.sin(ta*14+m.te));c.closePath();c.fill();
-      c.fillStyle='#bfe2f6';c.beginPath();c.ellipse(0,0,18,9,0,0,7);c.fill();c.fillStyle='#5a8cb8';c.beginPath();c.ellipse(-1,-3,16,5,0,Math.PI,0);c.fill();
-      c.fillStyle='#10202c';c.beginPath();c.arc(10,-2,2.4,0,7);c.fill();c.restore();}}}
+      const [x,y]=toBuf(m.w[0]+m.d[0]*m.v*dt+nx*wob,m.w[1]+m.d[1]*m.v*dt+ny*wob);const a=Math.atan2(m.d[1],m.d[0]);c.save();c.translate(x,y);c.rotate(a);c.scale(1.7,1.7*(Math.cos(a)<0?-1:1));const w=3*Math.sin(ta*14+m.te);   // 小鱼往左游时也是背朝上
+      // 小鱼也是预渲染的：纺锤形的身子，背深、肚皮浅，侧线一道银光，分叉的尾
+      c.fillStyle='rgba(84,124,160,0.85)';c.beginPath();c.moveTo(-12,0);c.quadraticCurveTo(-20,-3,-27,-9+w);c.lineTo(-23,w*0.5);c.lineTo(-27,9+w);c.quadraticCurveTo(-20,3,-12,0);c.closePath();c.fill();
+      {const gr=c.createLinearGradient(0,-8,0,7);gr.addColorStop(0,'#38607e');gr.addColorStop(0.45,'#8fb8d2');gr.addColorStop(0.75,'#d8e8f0');gr.addColorStop(1,'#f2f8fa');c.fillStyle=gr;}
+      c.beginPath();c.moveTo(17,0.5);c.bezierCurveTo(12,-8,-4,-8.5,-14,-1.5);c.lineTo(-14,1.5);c.bezierCurveTo(-4,7,12,7,17,0.5);c.closePath();c.fill();
+      c.strokeStyle='rgba(255,255,255,0.55)';c.lineWidth=1.2;c.beginPath();c.moveTo(12,-0.5);c.quadraticCurveTo(0,-1.5,-11,-0.5);c.stroke();
+      c.fillStyle='#0e1a24';c.beginPath();c.arc(10.5,-1.6,1.7,0,7);c.fill();c.fillStyle='rgba(255,255,255,0.85)';c.beginPath();c.arc(11,-2.2,0.6,0,7);c.fill();c.restore();}}}
 // 屏幕上的计分板：分数、命、吃到东西的“+10”、升级时的大字卡、看见钩子时的“！”
 function fishIcon(c,x,y,px,col){c.fillStyle=col;const R=['.###.#','#.####','.###.#'];R.forEach((r,j)=>{for(let i=0;i<6;i++)if(r[i]==='#')c.fillRect(x+i*px,y+j*px,px,px);});}
 function hud10(t,k,p){const px=[8,8,4,3][k],col=k===1?'#0f380f':'#fff';
@@ -102,10 +203,9 @@ function drawLevelScene(k,t,c,p){const l=LV[k],ta=t-T10ON+115;/* ta：屏里动�
     else{c.fillStyle=big?'#ffe060':'#fff060';c.beginPath();c.arc(px,py,r,0,7);c.fill();if(k===3){c.fillStyle='rgba(255,255,255,0.8)';c.beginPath();c.arc(px-r*0.3,py-r*0.3,r*0.35,0,7);c.fill();}}}
   // 鱼
   if(p){const b=fishToBuf(p);
-    if(k<=1){yuanSil(c,b,k===0?'#fff':'#0f380f');if(k===1){c.fillStyle='#306230';c.save();bodyFill(c,edges(b,PROF.yuan));c.clip();const s=spineAt(b,0.5);c.fillRect(0,0,SBW,SBH);c.restore();
-        c.save();bodyFill(c,edges(b,PROF.yuan));c.clip();c.fillStyle='#8bac0f';const e=edges(b,PROF.yuan);c.beginPath();e.bot.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));for(let i=e.M;i>=0;i--){const s=spineAt(b,i/e.M*0.8);c.lineTo(s.x,s.y);}c.closePath();c.fill();c.restore();}
-      const ey=bodyAt(b,PROF.yuan,0.09,0.3);c.fillStyle=k===0?'#000':'#9bbc0f';c.beginPath();c.arc(ey[0],ey[1],b.L*0.035,0,7);c.fill();}
-    else{for(const blk of ['yellow','red']){c.fillStyle=blk==='yellow'?'#f0c030':'#e03020';nianFishParts(c,b,blk);}c.fillStyle='#200808';c.strokeStyle='#200808';nianFishParts(c,b,'line');}}
+    if(k===3){let x0=1e9,x1=-1e9,ym=0;for(const q of b.sp){x0=Math.min(x0,q.x);x1=Math.max(x1,q.x);ym+=q.y;}ym/=b.sp.length;const hg=clamp((452-ym)/320),rx=Math.max(b.L*0.2,(x1-x0)*0.5)*(1+0.25*hg);   // 2003：沙地上一团影子（3D 才有），鱼离沙地越远越淡越散
+      c.save();c.filter=`blur(${(1.5+2.5*hg).toFixed(1)}px)`;c.fillStyle=`rgba(70,46,14,${(0.32-0.2*hg).toFixed(3)})`;c.beginPath();c.ellipse((x0+x1)/2,452,rx,b.L*0.045*(1+0.3*hg),0,0,7);c.fill();c.restore();}
+    gameFish(c,b,['mono','gb','ega','hi'][k],gameRoll(t));}
   // 量化到这一级的调色板
   const img=c.getImageData(0,0,l.rx,l.ry),d=img.data;
   for(let i=0;i<d.length;i+=4){const pi=i/4,xx=pi%l.rx,yy=(pi/l.rx)|0;const bay=BAYER4[(yy%4)*4+(xx%4)];let r=d[i],g=d[i+1],bl=d[i+2];
@@ -122,20 +222,45 @@ function renderScreen(t,p){const k=levelAt(t);sbx.setTransform(1,0,0,1,0,0);sbx.
   const fl=Math.max(...T10UP.map(tu=>Math.exp(-Math.max(0,t-tu)*14)*(t>=tu?1:0)));if(fl>0.02){sbx.fillStyle=`rgba(255,255,255,${0.5*fl})`;sbx.fillRect(0,0,SBW,SBH);}}
 // ---------- 显像管：外壳、玻璃、扫描线、开机与塌缩 ----------
 const SCRC=mk(W,H),scx=SCRC.getContext('2d');
-function crtHousing(c){const x0=SCR.x-SCR.w/2-38,y0=SCR.y-SCR.h/2-34,w=SCR.w+76,h=SCR.h+100;
-  let g=c.createLinearGradient(0,y0,0,y0+h);g.addColorStop(0,'#d9d2c0');g.addColorStop(1,'#b5ad98');c.fillStyle=g;c.beginPath();c.roundRect(x0,y0,w,h,18);c.fill();
-  c.strokeStyle='rgba(255,255,255,0.5)';c.lineWidth=1.5;c.beginPath();c.roundRect(x0+1.5,y0+1.5,w-3,h-3,17);c.stroke();
-  g=c.createLinearGradient(0,SCR.y-SCR.h/2-16,0,SCR.y+SCR.h/2+16);g.addColorStop(0,'#3c3a36');g.addColorStop(1,'#56524a');c.fillStyle=g;c.beginPath();c.roundRect(SCR.x-SCR.w/2-16,SCR.y-SCR.h/2-16,SCR.w+32,SCR.h+32,14);c.fill();
-  c.fillStyle='rgba(60,56,48,0.5)';for(let i=0;i<9;i++)c.fillRect(x0+w-120+i*11,y0+h-34,6,18);
-  c.fillStyle='#8a8370';c.beginPath();c.arc(x0+40,y0+h-26,8,0,7);c.fill();c.fillStyle='rgba(255,255,255,0.35)';c.beginPath();c.arc(x0+38,y0+h-28,3,0,7);c.fill();}
+// 显示器：80 年代的显像管——机壳有厚度（看得见右侧面）、屏幕四周一圈往里凹的斜面、顶上散热槽；下面一条是喇叭孔、两个旋钮、电源键；底下一个底座
+const TVF={x0:SCR.x-SCR.w/2-44,y0:SCR.y-SCR.h/2-40,w:SCR.w+88,h:SCR.h+112};
+function crtHousing(c){const {x0,y0,w,h}=TVF,dep=16;
+  c.fillStyle='#8f8878';c.beginPath();c.moveTo(SCR.x-72,y0+h-2);c.lineTo(SCR.x+72,y0+h-2);c.lineTo(SCR.x+94,y0+h+16);c.lineTo(SCR.x-94,y0+h+16);c.closePath();c.fill();
+  c.fillStyle='#a39b87';c.beginPath();c.moveTo(x0+w-8,y0+8);c.lineTo(x0+w+dep,y0+2);c.lineTo(x0+w+dep,y0+h-16);c.lineTo(x0+w-8,y0+h-4);c.closePath();c.fill();
+  let g=c.createLinearGradient(0,y0,0,y0+h);g.addColorStop(0,'#e5ddcc');g.addColorStop(0.6,'#d4cbb7');g.addColorStop(1,'#bcb29c');c.fillStyle=g;c.beginPath();c.roundRect(x0,y0,w,h,16);c.fill();
+  c.strokeStyle='rgba(255,255,255,0.6)';c.lineWidth=1.4;c.beginPath();c.moveTo(x0+16,y0+1.2);c.lineTo(x0+w-16,y0+1.2);c.stroke();c.strokeStyle='rgba(90,80,62,0.35)';c.beginPath();c.moveTo(x0+16,y0+h-1);c.lineTo(x0+w-16,y0+h-1);c.stroke();
+  const bx=SCR.x-SCR.w/2-18,by=SCR.y-SCR.h/2-18,bw=SCR.w+36,bh=SCR.h+36;
+  g=c.createLinearGradient(0,by,0,by+bh);g.addColorStop(0,'#26241f');g.addColorStop(0.5,'#3b3832');g.addColorStop(1,'#5a554b');c.fillStyle=g;c.beginPath();c.roundRect(bx,by,bw,bh,20);c.fill();
+  c.strokeStyle='rgba(255,255,255,0.4)';c.lineWidth=1.2;c.beginPath();c.roundRect(bx-1.5,by-1.5,bw+3,bh+3,21);c.stroke();
+  c.fillStyle='rgba(80,72,58,0.45)';for(let i=0;i<14;i++)c.fillRect(x0+w/2-91+i*13,y0+11,7,3.2);
+  const yb=y0+h-46;c.fillStyle='rgba(70,62,50,0.55)';for(let r=0;r<4;r++)for(let i=0;i<10;i++){c.beginPath();c.arc(x0+30+i*8,yb+r*8,1.8,0,7);c.fill();}
+  for(const kx of [x0+w-112,x0+w-80]){const ky=yb+12,kr=11;const gg=c.createRadialGradient(kx-3,ky-4,1,kx,ky,kr);gg.addColorStop(0,'#d2c9b5');gg.addColorStop(1,'#7c7463');c.fillStyle=gg;c.beginPath();c.arc(kx,ky,kr,0,7);c.fill();
+    c.strokeStyle='rgba(50,44,36,0.6)';c.lineWidth=1;c.stroke();c.lineWidth=1.8;c.beginPath();c.moveTo(kx,ky-kr+2);c.lineTo(kx,ky-kr+7);c.stroke();}
+  c.fillStyle='#9a917e';c.beginPath();c.roundRect(x0+w-44,yb+6,22,12,3);c.fill();c.strokeStyle='rgba(50,44,36,0.5)';c.lineWidth=1;c.stroke();
+  c.fillStyle='rgba(120,110,92,0.45)';c.beginPath();c.roundRect(SCR.x-26,yb+7,52,8,2);c.fill();}
+// 游戏主机和手柄，放在显示器下面，一根线连着
+function consoleSet(c,on){const cx=S10X-80,cy=214,w=176,h=30;
+  c.fillStyle='#44413c';c.beginPath();c.roundRect(cx-w/2,cy-h/2+6,w,h,6);c.fill();
+  let g=c.createLinearGradient(0,cy-h/2,0,cy+h/2);g.addColorStop(0,'#d2ccc0');g.addColorStop(1,'#a69f92');c.fillStyle=g;c.beginPath();c.roundRect(cx-w/2,cy-h/2,w,h-4,6);c.fill();
+  c.strokeStyle='rgba(255,255,255,0.5)';c.lineWidth=1;c.beginPath();c.moveTo(cx-w/2+8,cy-h/2+1);c.lineTo(cx+w/2-8,cy-h/2+1);c.stroke();
+  c.fillStyle='#2c2925';c.beginPath();c.roundRect(cx-46,cy-h/2+5,92,7,2);c.fill();
+  c.fillStyle='#8a2a22';c.beginPath();c.roundRect(cx+w/2-52,cy-1,16,7,2);c.fill();c.fillStyle='#5a554e';c.beginPath();c.roundRect(cx+w/2-32,cy-1,16,7,2);c.fill();
+  c.fillStyle=on?'rgba(255,70,50,0.95)':'rgba(80,36,30,0.9)';c.beginPath();c.arc(cx-w/2+16,cy+2,2.6,0,7);c.fill();
+  const gx=S10X+112,gy=242;
+  c.strokeStyle='#2c2a27';c.lineWidth=2.6;c.lineCap='round';c.beginPath();c.moveTo(gx-4,gy-14);c.bezierCurveTo(gx-10,gy-46,cx+w/2+34,cy+34,cx+w/2-2,cy+4);c.stroke();
+  g=c.createLinearGradient(0,gy-16,0,gy+16);g.addColorStop(0,'#5b5853');g.addColorStop(1,'#34322e');c.fillStyle=g;c.beginPath();c.roundRect(gx-42,gy-15,84,30,15);c.fill();
+  c.strokeStyle='rgba(255,255,255,0.25)';c.lineWidth=1;c.beginPath();c.roundRect(gx-41,gy-14,82,28,14);c.stroke();
+  c.fillStyle='#1d1c1a';c.fillRect(gx-31,gy-2.5,15,5);c.fillRect(gx-26,gy-7.5,5,15);
+  c.fillStyle='#9b2a22';for(const bx of [gx+18,gx+30]){c.beginPath();c.arc(bx,gy+(bx>gx+20?-3:3),4.3,0,7);c.fill();}
+  c.fillStyle='#24221f';for(const sx of [gx-7,gx+3]){c.beginPath();c.roundRect(sx,gy+4,8,3,1.5);c.fill();}}
 function crtGlass(c){c.beginPath();c.roundRect(SCR.x-SCR.w/2,SCR.y-SCR.h/2,SCR.w,SCR.h,16);}
 function drawS10Panel(t,cam,TR){const x0=S10X-S10W/2,y0=S10Y-S10W/2,z=cam.z;panelShadow(x0,y0,S10W,S10W);
   const on=smooth(T10ON,T10ON+0.08,t),off=t>=T10OFF;
   ctx.save();ctx.beginPath();ctx.rect(x0,y0,S10W,S10W);ctx.clip();
-  const bg=ctx.createRadialGradient(S10X,-20,40,S10X,0,520);bg.addColorStop(0,'#2a2c33');bg.addColorStop(1,'#111216');ctx.fillStyle=bg;ctx.fillRect(x0,y0,S10W,S10W);
+  ctx.drawImage(LINEN,0,0,840,840,x0,y0,S10W,S10W);ctx.globalCompositeOperation='multiply';ctx.fillStyle='rgb(96,94,92)';ctx.fillRect(x0,y0,S10W,S10W);ctx.globalCompositeOperation='source-over';   // 和别的展品一样的亚麻布底，深一点
   // 屏幕的光照在周围
   if(on>0&&!off){const k=levelAt(t);const col=[[200,220,255],[150,200,90],[120,160,255],[110,180,255]][k];ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(SCR.x,SCR.y,60,SCR.x,SCR.y,360);g.addColorStop(0,`rgba(${col},${0.22*on})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(x0,y0,S10W,S10W);ctx.restore();}
-  ctx.save();ctx.shadowColor='rgba(0,0,0,0.6)';ctx.shadowBlur=24*z;ctx.shadowOffsetY=10*z;crtHousing(ctx);ctx.restore();crtHousing(ctx);
+  ctx.save();ctx.shadowColor='rgba(0,0,0,0.55)';ctx.shadowBlur=24*z;ctx.shadowOffsetY=10*z;crtHousing(ctx);consoleSet(ctx,on>0&&!off);ctx.restore();crtHousing(ctx);consoleSet(ctx,on>0&&!off);
   ctx.restore();
   // 屏幕内容
   const p=(t>=T10ON+0.35&&t<T10OUT)?heroPoseNow(t):null;
@@ -163,7 +288,7 @@ function drawS10Panel(t,cam,TR){const x0=S10X-S10W/2,y0=S10Y-S10W/2,z=cam.z;pane
   g=ctx.createLinearGradient(SCR.x-SCR.w/2,SCR.y-SCR.h/2,SCR.x,SCR.y);g.addColorStop(0,'rgba(255,255,255,0.16)');g.addColorStop(0.5,'rgba(255,255,255,0.03)');g.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=g;ctx.fillRect(SCR.x-SCR.w/2,SCR.y-SCR.h/2,SCR.w,SCR.h);
   ctx.restore();
   // 电源灯
-  ctx.fillStyle=on>0&&!off?'rgba(80,255,120,0.95)':'rgba(40,60,40,0.9)';ctx.beginPath();ctx.arc(SCR.x+SCR.w/2+12,SCR.y+SCR.h/2+44,3.2,0,7);ctx.fill();
+  ctx.fillStyle=on>0&&!off?'rgba(80,255,120,0.95)':'rgba(40,60,40,0.9)';ctx.beginPath();ctx.arc(TVF.x0+TVF.w-54,TVF.y0+TVF.h-34,3.2,0,7);ctx.fill();
   ctx.strokeStyle='rgba(30,26,22,0.5)';ctx.lineWidth=1;ctx.strokeRect(x0,y0,S10W,S10W);}
 // ---------- 墙上的样子：进屏前是马赛克，出屏后是串色的信号 ----------
 const MOS=mk(240,135),mosx=MOS.getContext('2d');
@@ -172,7 +297,7 @@ function styleMosaic(t,cam,TR,p,clip){// 以世界坐标 6 个单位为一格
   const gw=Math.min(240,Math.ceil((x1-x0+p.L*0.8)/cell)),gh=Math.min(135,Math.ceil((y1-y0+p.L*0.8)/cell));mosx.setTransform(1,0,0,1,0,0);mosx.clearRect(0,0,240,135);mosx.setTransform(1/cell,0,0,1/cell,-x0/cell,-y0/cell);mosx.fillStyle=RED9;paperSil(mosx,p);
   const img=mosx.getImageData(0,0,gw,gh);const d=img.data;for(let i=3;i<d.length;i+=4)d[i]=d[i]>110?255:0;mosx.putImageData(img,0,0);
   ctx.save();ctx.setTransform(...TR);if(clip){ctx.beginPath();ctx.rect(...clip);ctx.clip();}ctx.imageSmoothingEnabled=false;ctx.shadowColor='rgba(0,0,0,0.3)';ctx.shadowBlur=6*cam.z;ctx.shadowOffsetY=6*cam.z;ctx.drawImage(MOS,0,0,gw,gh,x0,y0,gw*cell,gh*cell);ctx.restore();}
-function styleSignal(t,cam,TR,p,clip){layerBegin(hctx,TR);if(clip){hctx.beginPath();hctx.rect(...clip);hctx.clip();}for(const blk of ['yellow','red']){hctx.fillStyle=blk==='yellow'?'#f0c030':'#e03020';nianFishParts(hctx,p,blk);}hctx.fillStyle='#200808';hctx.strokeStyle='#200808';nianFishParts(hctx,p,'line');
+function styleSignal(t,cam,TR,p,clip){layerBegin(hctx,TR);if(clip){hctx.beginPath();hctx.rect(...clip);hctx.clip();}gameFish(hctx,p,'hi',gameRoll(t));   /* 从屏幕里游出来的，就是游戏里那条鱼 */
   const z=cam.z;const amp=lerp(7,2.5,smooth(T10OUT,T10OUT+2.5,t));ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=0.5;ctx.filter='hue-rotate(150deg)';ctx.drawImage(HEROC,-amp*z,0);ctx.filter='hue-rotate(-150deg)';ctx.drawImage(HEROC,amp*z,0);ctx.restore();
   const r=rng(Math.floor((t-T10ON+115)*20));ctx.save();ctx.setTransform(1,0,0,1,0,0);for(let i=0;i<6;i++){const y=r()*H,h=4+r()*14;ctx.drawImage(HEROC,0,y,W,h,(r()-.5)*24*z*(amp/7),y,W,h);}ctx.restore();blitLayer(HEROC,0.9);}
 const SCR_PATH=c=>c.rect(SCR.x-SCR.w/2,SCR.y-SCR.h/2,SCR.w,SCR.h);
