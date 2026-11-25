@@ -16,6 +16,7 @@ function finishFX(t){const g=ctx.createRadialGradient(W/2,H/2,H*0.42,W/2,H/2,H*1
   const fa=smooth(T_END-0.5,T_END,TREAL);if(fa>0.001){ctx.fillStyle=`rgba(0,0,0,${clamp(fa)})`;ctx.fillRect(0,0,W,H);}}
 function render(tReal){TREAL=tReal;TNOW=WE(tReal);const t=W5(TNOW);   // 全片按原来的时间画；只有磁州窑那一站另看真实的钟
   ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.filter='none';ctx.globalCompositeOperation='source-over';
+  ctx.imageSmoothingQuality='high';   // 预渲染的画布缩小画到远景、终章展墙时不起锯齿和颗粒（实测不变慢）
   const cam=camera(t),z=cam.z;const TR=[z,0,0,z,W/2-cam.x*z,H/2-cam.y*z];
   LABEL_FADE=1-smooth(T11BACK[0]+0.2,T11BACK[0]+0.9,t);ctx.setTransform(...TR);drawWall(cam);drawLabels(cam);
   const half=W/2/z;const offs={};for(const s of STN)offs[s.key]=panelOff(s.key,t);

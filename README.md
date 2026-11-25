@@ -31,7 +31,7 @@ This repository is the film. Clone it, open `film.html` in Chrome, and it plays.
 | 5 | Cizhou pillow, black-on-white fish and weeds | Song–Jin | A few strokes of black brush |
 | 6 | Fish among falling petals | Song · ink and color on silk | Drifting on silk with the petals |
 | 7 | Blue-and-white dish with fish and weeds | Yuan · Jingdezhen | Painted, fired, turned blue |
-| 8 | *Abundance Year after Year* | Qing · woodblock New Year print | Red and gold of the print |
+| 8 | *Abundance Year after Year* | Qing · Yangliuqing woodblock New Year print | Fills the empty arms of the baby, takes its colours and eye dots, then wriggles free |
 | 9 | Twin fish | Folk paper-cut | Cut out of red paper by scissors |
 | 10 | *Swim* | Video game · pixels | Shattered into pixels |
 | 11 | This station | Code | Only the lines of code that draw it |
@@ -69,4 +69,4 @@ The full options, how to regenerate the score, which file draws which station, a
 
 The code is released under the [MIT License](LICENSE).
 
-The embedded fonts are subsets of Noto Serif CJK SC and DejaVu Sans Mono, each under its own original license; see the [Noto font license](licenses/NotoSerifCJK-OFL.txt) and [DejaVu font license](licenses/DejaVu-LICENSE.txt).
+The film embeds subsets of [Noto Serif CJK SC](licenses/NotoSerifCJK-OFL.txt) and [DejaVu Sans Mono](licenses/DejaVu-LICENSE.txt). The four-character inscription uses [Yuji Syuku](https://github.com/Kinutafontfactory/Yuji), licensed under the [SIL Open Font License 1.1](fonts/OFL-Yuji.txt).

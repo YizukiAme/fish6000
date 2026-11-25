@@ -6,7 +6,7 @@ const P=600,R=255,ZW=0.8;
 const SCX=380,PCX=-380,PCY=0;
 const MS=3,MH=260*MS,MW=520*MS;
 const T_INSIDE=14.6,T_FREEZE=26.85,TP=26.2,T_WINK=44.8,T_LEAVE=45.9;
-const RAW=[64,60,58],BLUE=[20,40,124];
+const RAW=[64,60,58],BLUE=[34,62,160];   // 淡处是清亮的蓝，浓处靠积料那两层压深
 
 const SILK=(()=>{const w=2560,h=1440;const c=mk(w,h);const x=c.getContext('2d');const img=x.createImageData(w,h);const d=img.data;
   const n1=noise2(21,9,5),n2=noise2(22,40,22),n3=noise2(23,180,100);const r=rng(24);
@@ -109,7 +109,7 @@ function renderInk(t){const c=ictx;c.setTransform(1,0,0,1,0,0);c.globalComposite
   [[0.985,3.2],[0.975,1.2],[0.81,2.4],[0.785,1.6],[0.615,1.6],[0.595,2.6]].forEach(([r,lw],i)=>{const p=smooth(TP+i*0.12,TP+0.75+i*0.12,t);if(p<=0)return;c.lineWidth=lw;c.beginPath();c.arc(0,0,r*R,-Math.PI/2,-Math.PI/2+2*Math.PI*p);c.stroke();});
   // 口沿海水：八道密线逐条画，浪头随后留白
   const W0=TP+0.6,r0=0.815*R,r1=0.972*R;
-  for(let j=0;j<8;j++){const p=smooth(W0+j*0.1,W0+j*0.1+1.8,t);if(p<=0)continue;const rj=r0+(j+0.5)*(r1-r0)/8;c.lineWidth=0.95;c.beginPath();const n=Math.floor(720*p);
+  for(let j=0;j<8;j++){const p=smooth(W0+j*0.1,W0+j*0.1+1.8,t);if(p<=0)continue;const rj=r0+(j+0.5)*(r1-r0)/8;c.lineWidth=1.1;c.beginPath();const n=Math.floor(720*p);
     for(let i=0;i<=n;i++){const th=-Math.PI/2+i/720*Math.PI*2;const r=rj+2.0*Math.sin(th*32+j*0.9);i?c.lineTo(Math.cos(th)*r,Math.sin(th)*r):c.moveTo(Math.cos(th)*r,Math.sin(th)*r);}c.stroke();}
   for(let kk=0;kk<14;kk++){const fk=(kk+0.5)/14;const st=W0+0.35+fk*1.8;const cp=smooth(st,st+0.3,t);if(cp<=0)continue;const th=-Math.PI/2+fk*Math.PI*2;const rc=0.893*R;
     c.save();c.translate(Math.cos(th)*rc,Math.sin(th)*rc);c.rotate(th+Math.PI/2);
@@ -120,27 +120,27 @@ function renderInk(t){const c=ictx;c.setTransform(1,0,0,1,0,0);c.globalComposite
     c.restore();c.globalAlpha=1;}
   // 内壁缠枝莲：藤先走，叶和花随着长出来
   const pv=smooth(TP+2.2,TP+4.0,t);
-  if(pv>0){const stem=th=>0.70*R+0.026*R*Math.sin(th*10);c.lineWidth=2.7;c.beginPath();const n=Math.floor(600*pv);
+  if(pv>0){const stem=th=>0.70*R+0.026*R*Math.sin(th*10);c.lineWidth=3.1;c.beginPath();const n=Math.floor(600*pv);
     for(let i=0;i<=n;i++){const th=-Math.PI/2+i/600*Math.PI*2;const r=stem(th);i?c.lineTo(Math.cos(th)*r,Math.sin(th)*r):c.moveTo(Math.cos(th)*r,Math.sin(th)*r);}c.stroke();
     for(let kk=0;kk<40;kk++){if(kk%8===3)continue;const f=(kk+0.5)/40;const g=clamp((pv-f)/0.05);if(g<=0)continue;const th=-Math.PI/2+f*Math.PI*2;const r=stem(th);const side=kk%2?1:-1;const px=Math.cos(th)*r,py=Math.sin(th)*r;const ang=th+Math.PI/2+side*0.95;
-      leafShape(c,px,py,ang,21*g,6.6*g);c.globalAlpha=0.62;c.fill();c.globalAlpha=1;c.lineWidth=1.0;c.stroke();
-      c.lineWidth=0.6;c.beginPath();c.moveTo(px,py);c.lineTo(px+Math.cos(ang)*14*g,py+Math.sin(ang)*14*g);c.stroke();
+      leafShape(c,px,py,ang,25.5*g,8.8*g);c.globalAlpha=0.74;c.fill();c.globalAlpha=1;c.lineWidth=1.15;c.stroke();
+      c.save();c.globalCompositeOperation='destination-out';c.lineWidth=0.9;c.beginPath();c.moveTo(px,py);c.lineTo(px+Math.cos(ang)*18*g,py+Math.sin(ang)*18*g);c.stroke();c.restore();   // 叶脉留白
       if(kk%4===1&&g>0.6){c.lineWidth=0.9;c.beginPath();for(let i=0;i<=16;i++){const a=i/16*Math.PI*2.2;const rr=5*(1-i/16*0.75);c.lineTo(px-side*Math.cos(th)*6+Math.cos(a)*rr,py-side*Math.sin(th)*6+Math.sin(a)*rr);}c.stroke();}}
     for(let kk=3;kk<40;kk+=8){const f=(kk+0.5)/40;const g=clamp((pv-f)/0.06);if(g<=0)continue;const th=-Math.PI/2+f*Math.PI*2;const r=stem(th);const px=Math.cos(th)*r,py=Math.sin(th)*r;
-      for(let q=0;q<7;q++){const a=q/7*Math.PI*2;c.save();c.translate(px+Math.cos(a)*8*g,py+Math.sin(a)*8*g);c.rotate(a);c.beginPath();c.ellipse(0,0,8.4*g,4.8*g,0,0,7);c.globalAlpha=0.6;c.fill();c.globalAlpha=1;c.lineWidth=0.9;c.stroke();c.restore();}
-      c.beginPath();c.arc(px,py,3.6*g,0,7);c.globalAlpha=0.85;c.fill();c.globalAlpha=1;}}
+      for(let q=0;q<7;q++){const a=q/7*Math.PI*2;c.save();c.translate(px+Math.cos(a)*9.6*g,py+Math.sin(a)*9.6*g);c.rotate(a);c.beginPath();c.ellipse(0,0,10*g,5.8*g,0,0,7);c.globalAlpha=0.7;c.fill();c.globalAlpha=1;c.lineWidth=1.0;c.stroke();c.restore();}
+      c.beginPath();c.arc(px,py,4.4*g,0,7);c.globalAlpha=0.9;c.fill();c.globalAlpha=1;}}
   // 盘心：水草从根往上长
   c.save();c.beginPath();c.arc(0,0,0.592*R,0,7);c.clip();
   strands.forEach(({type,pts},si)=>{const p=smooth(TP+1.0+0.15*si,TP+2.1+0.15*si,t);if(p<=0)return;const n=Math.max(1,Math.floor((pts.length-1)*p));
     if(type==='rib'){if(n>=3){const Lp=[],Rp=[];for(let i=0;i<=n;i++){const a=pts[Math.max(0,i-1)],b=pts[Math.min(pts.length-1,i+1)];const dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;const nx=-dy/l,ny=dx/l,w=pts[i].w;Lp.push([pts[i].x+nx*w,pts[i].y+ny*w]);Rp.push([pts[i].x-nx*w,pts[i].y-ny*w]);}
-      c.beginPath();Lp.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));for(let i=Rp.length-1;i>=0;i--)c.lineTo(Rp[i][0],Rp[i][1]);c.closePath();c.globalAlpha=0.5;c.fill();c.globalAlpha=1;
+      c.beginPath();Lp.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));for(let i=Rp.length-1;i>=0;i--)c.lineTo(Rp[i][0],Rp[i][1]);c.closePath();c.globalAlpha=0.62;c.fill();c.globalAlpha=1;
       c.lineWidth=1.2;c.beginPath();Lp.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));c.stroke();c.beginPath();Rp.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));c.stroke();
       c.lineWidth=0.6;c.beginPath();for(let i=0;i<=n;i++)i?c.lineTo(pts[i].x,pts[i].y):c.moveTo(pts[i].x,pts[i].y);c.stroke();}}
     else{ribbon(c,pts.slice(0,n+1).map(q=>[q.x,q.y]),v=>lerp(2.8,0.9,v*n/(pts.length-1)),'#000',si);
-      for(let i=2;i<n;i+=2){const a=pts[i],b=pts[i+1];const ang0=Math.atan2(b.y-a.y,b.x-a.x);const sd=(i/2)%2?1:-1;const v=i/(pts.length-1);const g=clamp((n-i)/6);leafShape(c,a.x,a.y,ang0+sd*0.8,lerp(13,6,v)*g,lerp(3.4,2,v)*g);c.globalAlpha=0.55;c.fill();c.globalAlpha=1;c.lineWidth=0.8;c.stroke();}}});
+      for(let i=2;i<n;i+=2){const a=pts[i],b=pts[i+1];const ang0=Math.atan2(b.y-a.y,b.x-a.x);const sd=(i/2)%2?1:-1;const v=i/(pts.length-1);const g=clamp((n-i)/6);leafShape(c,a.x,a.y,ang0+sd*0.8,lerp(13,6,v)*g,lerp(3.4,2,v)*g);c.globalAlpha=0.66;c.fill();c.globalAlpha=1;c.lineWidth=0.8;c.stroke();}}});
   const pl=smooth(TP+3.2,TP+4.0,t);
   if(pl>0){const lx=0.47*R,ly=-0.43*R,lr=40*pl;c.save();c.beginPath();for(let i=0;i<=40;i++){const a=i/40*Math.PI*2;const rr=lr*(1+0.05*Math.sin(i*2.7));i?c.lineTo(lx+Math.cos(a)*rr,ly+Math.sin(a)*rr*0.86):c.moveTo(lx+Math.cos(a)*rr,ly+Math.sin(a)*rr*0.86);}c.closePath();
-    c.globalAlpha=0.42;c.fill();c.globalAlpha=1;c.lineWidth=1.4;c.stroke();c.lineWidth=0.75;for(let i=0;i<11;i++){const a=i/11*Math.PI*2+0.2;c.beginPath();c.moveTo(lx-4*pl,ly+3*pl);c.quadraticCurveTo(lx+Math.cos(a+0.15)*lr*0.5,ly+Math.sin(a+0.15)*lr*0.43,lx+Math.cos(a)*lr*0.95,ly+Math.sin(a)*lr*0.82);c.stroke();}
+    c.globalAlpha=0.52;c.fill();c.globalAlpha=1;c.lineWidth=1.4;c.stroke();c.lineWidth=0.75;for(let i=0;i<11;i++){const a=i/11*Math.PI*2+0.2;c.beginPath();c.moveTo(lx-4*pl,ly+3*pl);c.quadraticCurveTo(lx+Math.cos(a+0.15)*lr*0.5,ly+Math.sin(a+0.15)*lr*0.43,lx+Math.cos(a)*lr*0.95,ly+Math.sin(a)*lr*0.82);c.stroke();}
     c.beginPath();c.arc(lx-4*pl,ly+3*pl,3*pl,0,7);c.fill();c.restore();}
   const pd=smooth(TP+3.6,TP+4.2,t);
   if(pd>0){DUCK.forEach(([x,y,rot])=>{c.save();c.translate(x*R,y*R);c.rotate(rot);[[0,0,5.5],[8,3,4.5],[3,-7,4]].forEach(([dx,dy,r])=>{c.globalAlpha=pd*0.55;c.beginPath();c.arc(dx,dy,r*pd,0,7);c.fill();c.globalAlpha=pd;c.lineWidth=1.1;c.stroke();});c.restore();});
@@ -149,16 +149,32 @@ function renderInk(t){const c=ictx;c.setTransform(1,0,0,1,0,0);c.globalComposite
   // 鱼一碰到盘面，盘上的那部分就是画在釉坯上的钴料（和盘上别的纹样同一种墨色），一直到它定住、入窑；所以定住那一刻不会再变样
   if(t>=T_INSIDE){c.setTransform(MS,0,0,MS,MH-MS*PCX,MH-MS*PCY);const pose=fishPose(hero,Math.min(t,T_LEAVE));const ga=t<T_LEAVE?1:0.16+0.84*(1-smooth(T_LEAVE,T_LEAVE+0.4,t));c.globalAlpha=ga;drawYuan(c,pose,[0,0,0],1,1.5*MS);c.globalAlpha=1;const np=nibPetal(Math.min(t,T_LEAVE-0.02));petalInk(c,np.x,np.y,np.rot,np.s,[0,0,0],1,1.2);}
 }
-const COBNOISE=(()=>{const c=mk(MW,MW);const x=c.getContext('2d');const img=x.createImageData(MW,MW);const n1=noise2(71,26,26),n2=noise2(72,110,110);const s1=MW/26,s2=MW/110;
-  for(let y=0;y<MW;y++)for(let xx=0;xx<MW;xx++){const v=n1(xx/s1,y/s1)*0.6+n2(xx/s2,y/s2)*0.4;img.data[(y*MW+xx)*4+3]=255*clamp(0.62+v*0.45,0,1);}x.putImageData(img,0,0);return c;})();
-function ensureSpeck(){if(SPECK)return;renderInk(31.0);const d=ictx.getImageData(0,0,MW,MW).data;const r=rng(91);SPECK=[];let tries=0;
-  while(SPECK.length<1400&&tries<900000){tries++;const px=Math.floor(r()*MW),py=Math.floor(r()*MW);if(d[(py*MW+px)*4+3]>230)SPECK.push([px/MS-260,py/MS-260,0.3+r()*0.65]);}}
+const COBNOISE=(()=>{const c=mk(MW,MW);const x=c.getContext('2d');const img=x.createImageData(MW,MW);const n0=noise2(70,7,7),n1=noise2(71,26,26),n2=noise2(72,110,110);const s0=MW/7,s1=MW/26,s2=MW/110;
+  for(let y=0;y<MW;y++)for(let xx=0;xx<MW;xx++){const v=n0(xx/s0,y/s0)*0.3+n1(xx/s1,y/s1)*0.42+n2(xx/s2,y/s2)*0.28;img.data[(y*MW+xx)*4+3]=255*clamp(0.5+v*0.62,0,1);}x.putImageData(img,0,0);return c;})();
+// 积料：钴料在线条里、在平涂的边上堆得厚，烧出来更深（元青花“浓处发黑、淡处见底”的那种层次）。
+// 做法：原墨减去它自己的模糊——细线几乎全留下，大片平涂只留下边，再拿深蓝去乘
+const EDG=mk(MW,MW),edx=EDG.getContext('2d');
+function cobaltEdge(){edx.setTransform(1,0,0,1,0,0);edx.globalCompositeOperation='source-over';edx.globalAlpha=1;edx.filter='none';edx.clearRect(0,0,MW,MW);
+  edx.drawImage(INK,0,0);edx.globalCompositeOperation='destination-out';edx.filter=`blur(${(2.4*MS).toFixed(1)}px)`;edx.globalAlpha=0.85;edx.drawImage(INK,0,0);edx.globalAlpha=1;edx.filter='none';
+  edx.globalCompositeOperation='source-in';edx.fillStyle='rgb(24,30,96)';edx.fillRect(0,0,MW,MW);edx.globalCompositeOperation='source-over';}
+// 铁锈斑：钴料堆厚的地方烧出来发黑的斑。整盘先撒好（成簇、大小不一、顺着随便一个方向略长），每帧只留落在钴料上的那些
+let SPKM=null,POOLM=null;const SPKC=mk(MW,MW),spx=SPKC.getContext('2d');
+function ensureSpeck(){if(SPKM)return;SPKM=mk(MW,MW);const x=SPKM.getContext('2d');const r=rng(91);const cl=noise2(92,16,16);x.fillStyle='#000';
+  for(let i=0;i<5200;i++){const u=r(),v=r();const k=cl(u*16,v*16);if(r()>Math.pow(k,2.4)*1.7)continue;const big=r()<0.1;const rad=(big?1.1+r()*1.2:0.35+r()*0.6)*MS;
+    x.save();x.translate(u*MW,v*MW);x.rotate(r()*Math.PI);x.globalAlpha=0.7+r()*0.3;x.beginPath();x.ellipse(0,0,rad*(1+r()*0.8),rad*(0.5+r()*0.4),0,0,7);x.fill();
+    if(big){for(let j=0;j<3;j++){x.beginPath();x.ellipse((r()-0.5)*rad*1.6,(r()-0.5)*rad,rad*0.6,rad*0.4,r()*3,0,7);x.fill();}}x.restore();}
+  // 积料：钴料在平涂里不匀，一片片地深下去
+  POOLM=mk(MW,MW);const px=POOLM.getContext('2d');const img=px.createImageData(MW,MW);const n1=noise2(93,24,24),n2=noise2(94,90,90);
+  for(let y=0;y<MW;y++)for(let xx=0;xx<MW;xx++){const v=n1(xx/MW*24,y/MW*24)*0.62+n2(xx/MW*90,y/MW*90)*0.38;img.data[(y*MW+xx)*4+3]=255*smooth(0.52,0.74,v);}px.putImageData(img,0,0);}
+// 拿当时的墨裁出：mask 和墨重叠的部分，涂成 col
+function maskInk(mask,col){spx.setTransform(1,0,0,1,0,0);spx.globalCompositeOperation='source-over';spx.globalAlpha=1;spx.filter='none';spx.clearRect(0,0,MW,MW);
+  spx.drawImage(mask,0,0);spx.globalCompositeOperation='destination-in';spx.drawImage(INK,0,0);spx.globalCompositeOperation='source-in';spx.fillStyle=col;spx.fillRect(0,0,MW,MW);spx.globalCompositeOperation='source-over';return SPKC;}
 function colorizeInk(col){cctx.setTransform(1,0,0,1,0,0);cctx.globalCompositeOperation='source-over';cctx.clearRect(0,0,MW,MW);cctx.drawImage(INK,0,0);cctx.globalCompositeOperation='source-in';cctx.fillStyle=col;cctx.fillRect(0,0,MW,MW);cctx.globalCompositeOperation='destination-in';cctx.drawImage(COBNOISE,0,0);cctx.globalCompositeOperation='source-over';}
 const cpOf=t=>smooth(35.8,36.6,t);
 function drawPlate(t,cx,cy,z){
   const cp=cpOf(t),glazeP=smooth(31.0,32.6,t),glazeA=0.88*(1-smooth(35.9,36.6,t));
   let sg=ctx.createRadialGradient(cx+10,cy+22,R*0.75,cx+10,cy+22,R*1.15);sg.addColorStop(0,'rgba(0,0,0,0.55)');sg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=sg;ctx.beginPath();ctx.arc(cx+10,cy+22,R*1.15,0,7);ctx.fill();
-  const c0=mixA([226,218,202],[241,244,239],cp),c1=mixA([198,188,168],[210,219,215],cp);
+  const c0=mixA([226,218,202],[236,242,242],cp),c1=mixA([198,188,168],[202,215,217],cp);
   const bd=ctx.createRadialGradient(cx-R*.3,cy-R*.35,R*0.05,cx,cy,R*1.08);bd.addColorStop(0,rgba(c0,1));bd.addColorStop(1,rgba(c1,1));ctx.fillStyle=bd;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fill();
   if(cp<1){ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.clip();ctx.globalAlpha=0.12*(1-cp);ctx.globalCompositeOperation='multiply';ctx.fillStyle=PLATEGRAIN;ctx.fillRect(cx-R,cy-R,2*R,2*R);ctx.restore();}
   ctx.save();ctx.beginPath();ctx.arc(cx,cy,R*0.8,0,Math.PI*2);ctx.moveTo(cx+R*0.57,cy);ctx.arc(cx,cy,R*0.57,0,Math.PI*2,true);ctx.closePath();
@@ -170,9 +186,13 @@ function drawPlate(t,cx,cy,z){
   const fishOn=t>=T_INSIDE&&t<TP&&fishPose(hero,t).sp.some(q=>Math.hypot(q.x-cx,q.y-cy)<R+12);
   if(t>=TP||fishOn){renderInk(t);colorizeInk(rgba(mixA(RAW,BLUE,cp),1));
     ctx.save();ctx.beginPath();ctx.arc(cx,cy,R-1,0,7);ctx.clip();
-    if(cp>0.01){ctx.globalAlpha=0.35*cp;ctx.filter=`blur(${(2.2*z).toFixed(1)}px)`;ctx.drawImage(COL,cx-260,cy-260,520,520);ctx.filter='none';}
-    ctx.globalAlpha=0.94;ctx.globalCompositeOperation='multiply';if(cp>0.01)ctx.filter=`blur(${(0.45*z*cp).toFixed(2)}px)`;ctx.drawImage(COL,cx-260,cy-260,520,520);ctx.filter='none';ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
-    if(cp>0){ensureSpeck();ctx.fillStyle=`rgba(8,14,44,${0.55*cp})`;for(const [x,y,r] of SPECK){ctx.beginPath();ctx.arc(cx+x,cy+y,r,0,7);ctx.fill();}}
+    if(cp>0.01){ctx.globalAlpha=0.42*cp;ctx.filter=`blur(${(2.6*z).toFixed(1)}px)`;ctx.drawImage(COL,cx-260,cy-260,520,520);ctx.filter='none';}   // 晕散：钴料在釉里化开一圈
+    ctx.globalAlpha=0.94;ctx.globalCompositeOperation='multiply';if(cp>0.01)ctx.filter=`blur(${(0.45*z*cp).toFixed(2)}px)`;ctx.drawImage(COL,cx-260,cy-260,520,520);ctx.filter='none';ctx.globalAlpha=1;
+    if(cp>0.01){cobaltEdge();ctx.globalAlpha=0.42*cp;ctx.filter=`blur(${(0.35*z).toFixed(2)}px)`;ctx.drawImage(EDG,cx-260,cy-260,520,520);ctx.filter='none';ctx.globalAlpha=1;}
+    ctx.globalCompositeOperation='source-over';
+    if(cp>0.01){ensureSpeck();
+      ctx.globalCompositeOperation='multiply';ctx.globalAlpha=0.55*cp;ctx.drawImage(maskInk(POOLM,'rgb(40,44,120)'),cx-260,cy-260,520,520);   // 积料处深下去
+      ctx.globalCompositeOperation='source-over';ctx.globalAlpha=0.9*cp;ctx.filter=`blur(${(0.3*z).toFixed(2)}px)`;ctx.drawImage(maskInk(SPKM,'rgb(16,17,40)'),cx-260,cy-260,520,520);ctx.filter='none';ctx.globalAlpha=1;}
     ctx.restore();}
   if(glazeP>0&&glazeA>0.002){ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.clip();
     const drips=[[-150,26],[-60,18],[40,30],[120,20],[190,24],[-210,16]];

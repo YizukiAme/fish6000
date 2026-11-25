@@ -323,7 +323,7 @@ for i, nm in enumerate(['D4', 'F#4', 'A4', 'D5']): one(lute_soft(nm, 0.11, 1.6),
 one(fan('A5', 0.07), 'fan', T7L + 0.6, 'A5', 0.6, 0.3)
 one(pipa('A4', 0.1, 1.8, roll=0.5), 'pipa', T7L + 1.2, 'A4', 0.6, -0.3); one(lute_soft('E4', 0.09, 2.0), 'pluck', T7L + 2.0, 'E4', 0.5, -0.4)
 
-# ===== 捌 · 年画：锣鼓开道，唢呐把主题从头吹到尾（徵调式，落在 A），一拍 0.35 秒；后半句头三个音正好踩在四块色版上，
+# ===== 捌 · 年画（蓮年有餘）：锣鼓开道，唢呐把主题从头吹到尾（徵调式，落在 A），一拍 0.35 秒；后半句头三个音正好踩在四块色版上，
 #       吹完时整张画也停够了；鱼一扭，溜了 =====
 G8 = lambda k: 103.85 + 0.35 * k
 tr.add(gong(0.07, big=False), G8(-10), 0.2)
@@ -342,6 +342,11 @@ tr.add(cymbal(0.06, 1.2), 104.9, 0.25)
 for b, kind, a in YG: tr.add(dum(a * 0.75) if kind == 'D' else gong(a * 0.85, big=False), G8(4 + b), 0.0 if kind == 'D' else 0.15)
 tr.add(dum(0.08), G8(8), 0.0)
 tr.add(swish(0.02, 0.3, hi=True), 105.85, -0.2)
+# 绘：开脸、染荷花、染衣裳、染鱼尾，几笔很轻的刷子声；最后点睛，两下小水滴似的「嗒」——用自己的随机数，后面的声音一点不变
+_rng8 = _al.rng; _al.rng = np.random.default_rng(88)
+for tt in (105.0, 105.16, 105.3, 105.4): tr.add(swish(0.011, 0.24), tt, -0.1)
+tr.add(drop(0.038, 1175), 105.76, -0.15); tr.add(drop(0.042, 1568), 105.86, -0.05)
+_al.rng = _rng8
 T8SLIP = 107.22   # 鱼一扭，溜了
 phrase(suona_phrase, 'suona', T8SLIP - 0.32, [(0, 0.15, 'A4'), (0.15, 0.15, 'B4'), (0.3, 0.4, 'E5')], pan=-0.2, amp=0.11, dyn=None)
 tr.add(gong(0.08, big=False), T8SLIP, 0.3); tr.add(swish(0.06, 0.4, hi=True), T8SLIP + 0.08, -0.3)

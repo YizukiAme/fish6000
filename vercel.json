@@ -2,6 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "",
-  "buildCommand": "mkdir -p site && cp film.html site/index.html && cp score_full.wav site/score_full.wav && cp LICENSE site/LICENSE && cp -R licenses site/licenses",
+  "buildCommand": "mkdir -p site && cp film.html site/index.html && cp score_full.wav site/score_full.wav && cp LICENSE site/LICENSE && cp -R licenses site/licenses && cp fonts/OFL-Yuji.txt site/licenses/",
   "outputDirectory": "site"
 }

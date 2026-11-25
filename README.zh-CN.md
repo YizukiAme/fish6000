@@ -31,7 +31,7 @@
 | 伍 | 白地黑花鱼藻纹枕 | 宋金 · 磁州窑 | 变成几笔黑花 |
 | 陆 | 落花游鱼 | 宋 · 绢本设色 | 在绢上和落花一起漂 |
 | 柒 | 青花鱼藻纹盘 | 元 · 景德镇窑 | 落笔，入窑，烧出了蓝 |
-| 捌 | 连年有余 | 清 · 木版年画 | 染上年画的红与金 |
+| 捌 | 莲年有余 | 清 · 杨柳青木版年画 | 补上娃娃怀里那条鲤鱼，套色、点睛，一活就溜了 |
 | 玖 | 双鱼 | 民间剪纸 | 被剪刀从红纸上剪了出来 |
 | 拾 | 游 | 电子游戏 · 像素 | 碎成一格一格的像素 |
 | 拾壹 | 这一站 | 代码 | 只剩画出它的那几行代码 |
@@ -69,4 +69,4 @@ node render.js mux film_silent.mp4 score_full.wav film.mp4
 
 代码以 [MIT](LICENSE) 许可发布。
 
-内嵌字体是 Noto Serif CJK SC 和 DejaVu Sans Mono 的子集，分别遵循各自的原许可证，见 [Noto 字体许可](licenses/NotoSerifCJK-OFL.txt) 和 [DejaVu 字体许可](licenses/DejaVu-LICENSE.txt)。
+内嵌字体包括 [Noto Serif CJK SC](licenses/NotoSerifCJK-OFL.txt) 和 [DejaVu Sans Mono](licenses/DejaVu-LICENSE.txt) 的子集。年画题字「蓮年有餘」出自片冈佑之的[佑字 肅](https://github.com/Kinutafontfactory/Yuji)，采用 [SIL Open Font License 1.1](fonts/OFL-Yuji.txt)。

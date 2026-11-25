@@ -4,6 +4,7 @@
 
 用法：  python tools/make_fonts.py                 # 在默认位置找字体（Linux 的 /usr/share/fonts）
         python tools/make_fonts.py 字体所在文件夹   # 自己指定（里面要有 NotoSerifCJK-Regular.ttc 等）
+        python tools/make_fonts.py --brush-only YujiSyuku-Regular.ttf  # 重做年画四字子集
 需要：  pip install fonttools brotli
 改了字幕、加了新字以后跑一次；不跑也能看，只是新加的字会用系统字体顶上。"""
 import base64, io, pathlib, re, sys
@@ -12,6 +13,9 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC = ROOT / 'film'
 SERIF = {400: 'NotoSerifCJK-Regular.ttc', 500: 'NotoSerifCJK-Medium.ttc', 600: 'NotoSerifCJK-SemiBold.ttc', 700: 'NotoSerifCJK-Bold.ttc'}
 MONO = 'DejaVuSansMono.ttf'
+BRUSH_FAMILY = 'Yuji Syuku'
+BRUSH_TEXT = '蓮年有餘'
+BRUSH_ASSET = ROOT / 'fonts' / 'YujiSyuku-nianhua.woff2'
 DIRS = ['/usr/share/fonts/opentype/noto', '/usr/share/fonts/truetype/dejavu', '/usr/share/fonts/noto-cjk', '/usr/share/fonts/dejavu']
 
 
@@ -49,7 +53,7 @@ def subset_woff2(path, text, want_family=None):
                 break
         else:
             raise RuntimeError(f'{path.name} 里没有 {want_family}')
-    font = TTFont(str(path), fontNumber=idx)
+    font = TTFont(str(path), fontNumber=idx, recalcTimestamp=False)
     opt = subset.Options()
     opt.flavor = 'woff2'
     opt.layout_features = ['*']
@@ -63,9 +67,37 @@ def subset_woff2(path, text, want_family=None):
     return buf.getvalue()
 
 
+def rebuild_brush(source):
+    """从上游正体提取四个题字，先检查每个字的字形映射。"""
+    from fontTools.ttLib import TTFont
+    with TTFont(source) as font:
+        if font['name'].getDebugName(1) != BRUSH_FAMILY:
+            raise ValueError(f'需要 {BRUSH_FAMILY} 字体')
+        missing = [char for char in BRUSH_TEXT if ord(char) not in font.getBestCmap()]
+        if missing:
+            raise ValueError(f'字体缺少 {" ".join(missing)}')
+    BRUSH_ASSET.write_bytes(subset_woff2(source, BRUSH_TEXT))
+
+
+def face_row(family, weight, data):
+    return f'["{family}",{weight},"{base64.b64encode(data).decode()}"],'
+
+
+def sync_brush():
+    """普通离线构建只需标准库和随包字体，不需要系统安装原字体。"""
+    path = SRC / 'fonts.js'
+    js = path.read_text(encoding='utf-8')
+    row = face_row(BRUSH_FAMILY, 400, BRUSH_ASSET.read_bytes())
+    if row in js:
+        return
+    lines = [line for line in js.splitlines() if not line.startswith(f'["{BRUSH_FAMILY}",')]
+    lines.insert(lines.index('const FONT_FACES=[') + 1, row)
+    path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+
 def build(dirs, quiet=False):
     text = used_text()
-    faces = []
+    faces = [(BRUSH_FAMILY, 400, BRUSH_ASSET.read_bytes())]
     for w, name in SERIF.items():
         p = find(name, dirs)
         if not p:
@@ -79,7 +111,7 @@ def build(dirs, quiet=False):
           '// 内嵌进网页，换一台电脑打开也是同样的字形；字体许可：Noto Serif CJK / DejaVu 均可自由再分发',
           'const FONT_FACES=[']
     for fam, w, data in faces:
-        js.append(f'["{fam}",{w},"{base64.b64encode(data).decode()}"],')
+        js.append(face_row(fam, w, data))
     js.append('];')
     js.append('const FONTS_READY=Promise.all(FONT_FACES.map(([fam,w,b64])=>{const s=atob(b64);const u=new Uint8Array(s.length);'
               'for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);const f=new FontFace(fam,u.buffer,{weight:String(w)});'
@@ -92,6 +124,7 @@ def build(dirs, quiet=False):
 
 def update_if_possible():
     """build.py 调用：本机有原字体、而且用到的字变了，才重新生成；否则什么都不做。"""
+    sync_brush()
     stamp = SRC / '.fonts_chars'
     try:
         text = used_text()
@@ -107,6 +140,10 @@ def update_if_possible():
 
 
 if __name__ == '__main__':
+    if len(sys.argv) == 3 and sys.argv[1] == '--brush-only':
+        rebuild_brush(pathlib.Path(sys.argv[2]))
+        sync_brush()
+        sys.exit(0)
     dirs = sys.argv[1:] or DIRS
     t = build(dirs)
     (SRC / '.fonts_chars').write_text(t, encoding='utf-8')

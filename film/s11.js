@@ -223,7 +223,7 @@ function styleNianPlain(t,cam,TR,p,clip){if(clip){ctx.save();ctx.beginPath();ctx
 const MEDIA={
   s3:{path:c=>c.rect(S3X-270,S3Y-165,540,330),tIn:35.14,prev:styleOBI},              // 拓片：碰到墨拓才变成汉画里的黑鱼
   s4:{path:c=>{c.moveTo(S4X+R4-4,S4Y);c.arc(S4X,S4Y,R4-4,0,2*Math.PI);},tIn:43.12,prev:styleHan},   // 铜洗：越过盆沿才变成铜
-  s8:{path:c=>c.rect(S8X-PR8-8,S8Y-PR8-8,2*PR8+16,2*PR8+16),tIn:103.35,prev:styleYuanP}, // 年画：越过红框和纸的交界，才变成墨线鲤鱼
+  s8:{path:c=>c.rect(...PAPER_RECT8),tIn:103.35,prev:styleYuanP}, // 年画：越过红框和纸的交界，才变成墨线鲤鱼
   s11:{path:c=>c.rect(S11X-S11W/2,S11Y-S11W/2,S11W,S11W),tIn:139.9,prev:styleSignal}};// 代码：进了代码屏才只剩骨架
 for(const s of STN){const m=MEDIA[s.key];if(!m)continue;const cur=s.style;s.style=(t,cam,TR,p,clip)=>splitStyle(t,cam,TR,p,clip,m.path,m.tIn,m.prev,cur);}
 // 宋画：画外（墙上）还是磁州窑那条墨笔鱼，进了绢面才是宋画（画面里那部分由画自己来画）

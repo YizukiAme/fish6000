@@ -8,6 +8,16 @@ let BRZ=null;
 const PATINA=(()=>{const c=mk(256,256);const x=c.getContext('2d');const r=rng(451);const n=noise2(452,6,6);
   for(let i=0;i<900;i++){const u=r(),v=r();const k=n(u*6,v*6);if(r()>0.35+0.5*k)continue;const col=r()<0.75?`rgba(${70+r()*30|0},${118+r()*30|0},${90+r()*25|0},${0.25+r()*0.5})`:`rgba(60,104,122,${0.3+r()*0.4})`;
     x.fillStyle=col;for(const [ox,oy] of [[0,0],[256,0],[0,256],[256,256],[-256,0],[0,-256]]){x.beginPath();x.arc(u*256+ox,v*256+oy,0.5+r()*2.2,0,7);x.fill();}}return c;})();
+// 铜鱼身上的锈：和洗底是同一种锈、同一套颜色（鱼是和洗一起铸出来的，不是后贴上去的黄铜）；按鱼自己的坐标贴，鱼游的时候锈跟着走
+const FPAT=(()=>{const S=1024,c=mk(S,S),x=c.getContext('2d'),img=x.createImageData(S,S),d=img.data;
+  const n1=noise2(481,8,8),n2=noise2(482,34,34),n3=noise2(483,130,130),n4=noise2(484,6,6),n5=noise2(485,18,18),nc=noise2(486,52,52),nc2=noise2(487,150,150),r=rng(488);
+  for(let py=0;py<S;py++)for(let px=0;px<S;px++){const u=px/S,v=py/S;
+    const pat=clamp(0.24+clamp((n1(u*8,v*8)-0.45)*2.2)*0.55+(n3(u*130,v*130)-0.5)*0.32+clamp((n2(u*34,v*34)-0.6)*3)*0.3);
+    const blue=clamp((n4(u*6,v*6)-0.68)*3),cr=smooth(0.66,0.72,nc(u*52,v*52)*0.65+nc2(u*150,v*150)*0.35)*smooth(0.45,0.75,n1(u*8+2,v*8+5)),red=clamp((n5(u*18,v*18)-0.76)*4)*(1-pat)*(1-cr);
+    let R=86,G=66,B=42;R=lerp(R,lerp(70,62,blue),pat);G=lerp(G,lerp(96,98,blue),pat);B=lerp(B,lerp(70,104,blue),pat);
+    R=lerp(R,108,cr*0.55);G=lerp(G,142,cr*0.55);B=lerp(B,108,cr*0.55);R=lerp(R,124,red);G=lerp(G,64,red);B=lerp(B,42,red);
+    const gr=0.84*(1+(n3(u*130,v*130)-0.5)*0.16+(r()-0.5)*0.09);const k=(py*S+px)*4;d[k]=clamp(R*gr,0,255);d[k+1]=clamp(G*gr,0,255);d[k+2]=clamp(B*gr,0,255);d[k+3]=255;}
+  x.putImageData(img,0,0);return c;})();
 function prepBronze(){const Wd=B4W,Hd=B4W;const hm=new Float32Array(Wd*Hd);const inside=new Uint8Array(Wd*Hd);
   // 铭文的凸起：先画进遮罩
   const im=mk(Wd,Hd);const ix=im.getContext('2d');ix.setTransform(MS4,0,0,MS4,Wd/2,Hd/2);ix.fillStyle='#fff';ix.strokeStyle='#fff';ix.lineWidth=1.2;ix.lineJoin='round';
@@ -18,10 +28,16 @@ function prepBronze(){const Wd=B4W,Hd=B4W;const hm=new Float32Array(Wd*Hd);const
       if(r>0.84*R4){h=0;if(r>R4-5){const q=(r-(R4-5))/5;h=-5+5*Math.sqrt(Math.max(0,1-q*q));}if(r<0.84*R4+4){const q=(0.84*R4+4-r)/4;h=Math.min(h,-4+4*Math.sqrt(Math.max(0,1-q*q)));}
         h+=1.3*Math.exp(-Math.pow((r-0.955*R4)/1.3,2));}
       else if(r>0.62*R4){const q=(0.84*R4-r)/(0.22*R4);h=-4-22*Math.pow(q,0.8);}
-      else{h=-26;h+=1.25*Math.exp(-Math.pow((r-0.565*R4)/0.9,2))+1.25*Math.exp(-Math.pow((r-0.525*R4)/0.9,2));h+=1.5*ID[i*4]/255;}}
+      else{h=-26;h+=1.25*Math.exp(-Math.pow((r-0.565*R4)/0.9,2))+1.25*Math.exp(-Math.pow((r-0.525*R4)/0.9,2));h+=2.6*ID[i*4]/255;}}
     // 铺首衔环：左右两个铜环
     for(const sx of [-1,1]){const cx=sx*(R4+17),d=Math.hypot(x-cx,y);const tube=Math.abs(d-14);if(tube<3.2){const hh=-6+Math.sqrt(3.2*3.2-tube*tube)*1.2;if(hh>h){h=hh;inside[i]=2;}}}
     hm[i]=h;}
+  // 锈壳和麻点：一块块鼓起来的粉绿锈（孔雀石），加上细密的麻坑——光一照就有颗粒感，不是平滑的颜色
+  // 锈壳不是均匀撒的：成片地长（大尺度的“哪里锈得重”），片里大大小小
+  const CR=new Float32Array(Wd*Hd);{const nc=noise2(467,46,46),nc2=noise2(468,140,140),np=noise2(469,260,260),nl=noise2(470,5,5),nf=noise2(471,300,300);
+    for(let py=0;py<Hd;py++)for(let px=0;px<Wd;px++){const i=py*Wd+px;if(inside[i]!==1)continue;const u=px/Wd,v=py/Hd;
+      const zone=smooth(0.42,0.72,nl(u*5,v*5));const f=nc(u*46,v*46)*0.55+nc2(u*140,v*140)*0.3+nf(u*300,v*300)*0.15;
+      const cr=smooth(0.66-0.1*zone,0.72-0.1*zone,f)*(0.15+0.85*zone);CR[i]=cr;hm[i]+=cr*0.7+(np(u*260,v*260)-0.5)*0.4;}}
   // 凹处（铜锈积在低洼里）
   const blurH=new Float32Array(Wd*Hd);{const R=Math.round(4*MS4);const tmp=new Float32Array(Wd*Hd);
     for(let y=0;y<Hd;y++){let s=0,c=0;for(let x=-R;x<Wd+R;x++){if(x+R<Wd&&hm[y*Wd+x+R]>-90){s+=hm[y*Wd+x+R];c++;}if(x-R-1>=0&&hm[y*Wd+x-R-1]>-90){s-=hm[y*Wd+x-R-1];c--;}if(x>=0&&x<Wd)tmp[y*Wd+x]=c?s/c:-26;}}
@@ -36,13 +52,15 @@ function prepBronze(){const Wd=B4W,Hd=B4W;const hm=new Float32Array(Wd*Hd);const
     if(inside[i]===1&&rr<0.84*R4+2){const b=(x*L4[0]+y*L4[1])/Math.hypot(L4[0],L4[1]);const cc=rr*rr-Math.pow(0.84*R4,2);const sd=-b+Math.sqrt(Math.max(0,b*b-cc));const dep=-hm[i];dif*=1-0.55*smooth(-3,6,dep-sd*1.0);}
     if(inside[i]===1&&rr<0.64*R4)dif*=1-0.18*Math.exp(-Math.pow((rr-0.62*R4)/8,2));
     const u=px/Wd,v=py/Hd;const cav=clamp((blurH[i]-hm[i])*0.6);
-    let pat=0.18+clamp((n1(u*7,v*7)-0.45)*2.4)*0.7+cav*0.8+clamp((n2(u*30,v*30)-0.6)*3)*0.35;if(inside[i]===2)pat*=0.6;
+    let pat=0.2+clamp((n1(u*7,v*7)-0.45)*2.4)*0.62+cav*0.8+clamp((n2(u*30,v*30)-0.6)*3)*0.3+(n3(u*120,v*120)-0.5)*0.3;if(inside[i]===2)pat*=0.6;
     if(rr>0.84*R4&&inside[i]===1)pat*=0.75;pat=clamp(pat);
-    const blue=clamp((n4(u*5,v*5)-0.62)*3);const red=clamp((n5(u*16,v*16)-0.74)*4)*(1-pat);const earth=clamp((n3(u*120,v*120)-0.7)*3)*0.5;
-    let R=98,G=80,B=52;const nz2=(n2(u*30,v*30)-0.5)*0.12+(r()-.5)*0.06;
-    R=lerp(R,lerp(72,58,blue),pat);G=lerp(G,lerp(124,104,blue),pat);B=lerp(B,lerp(92,122,blue),pat);
-    R=lerp(R,124,red);G=lerp(G,66,red);B=lerp(B,44,red);R=lerp(R,150,earth);G=lerp(G,132,earth);B=lerp(B,104,earth);
-    const lum=(0.26+0.8*dif)*(1+nz2);const metal=(1-pat)*(1-earth);
+    const ins=ID[i*4]/255;   // 铭文鼓起来的地方磨得亮一点、锈少一点，字才认得出来（实物上“大吉羊”是清楚的）
+    if(ins>0.05){pat*=1-0.4*ins;}const crust=(CR[i]||0)*(1-0.9*ins);const blue=clamp((n4(u*5,v*5)-0.68)*3);const red=clamp((n5(u*16,v*16)-0.76)*4)*(1-pat)*(1-crust);const earth=clamp((n3(u*120,v*120)-0.7)*3)*0.5;
+    let R=86,G=66,B=42;const nz2=(n2(u*30,v*30)-0.5)*0.12+(n3(u*120,v*120)-0.5)*0.1+(r()-.5)*0.08;
+    R=lerp(R,lerp(70,62,blue),pat);G=lerp(G,lerp(96,98,blue),pat);B=lerp(B,lerp(70,104,blue),pat);
+    {const lc=0.9+0.2*n2(u*30+3,v*30+7);R=lerp(R,108*lc,crust*0.8);G=lerp(G,142*lc,crust*0.8);B=lerp(B,108*lc,crust*0.8);}
+    R=lerp(R,124,red);G=lerp(G,64,red);B=lerp(B,42,red);R=lerp(R,150,earth);G=lerp(G,132,earth);B=lerp(B,104,earth);
+    const lum=(0.26+0.8*dif)*(1+nz2);const metal=(1-pat)*(1-earth)*(1-crust);
     const s1=Math.pow(ndh,70)*0.65,s2=Math.pow(ndh,9)*0.09;
     const k=(py*Wd+px)*4;d[k]=clamp(R*lum+metal*(255*s1+220*s2),0,255);d[k+1]=clamp(G*lum+metal*(232*s1+186*s2),0,255);d[k+2]=clamp(B*lum+metal*(180*s1+128*s2),0,255);
     d[k+3]=inside[i]===2?255:255*clamp((R4+0.5-rr)*MS4/1.5);}
@@ -56,22 +74,26 @@ function bronzeSil(c,p,fill='#fff'){const pr=PROF_BRZ,L=p.L;c.fillStyle=fill;
   c.beginPath();c.moveTo(bt[0],bt[1]);c.lineTo(tt[0],tt[1]);c.lineTo(nt[0],nt[1]);c.lineTo(tb[0],tb[1]);c.lineTo(bb[0],bb[1]);c.closePath();c.fill();
   bodyFill(c,edges(p,pr));c.fill();}
 function bronzeDetail(c,p){const pr=PROF_BRZ,L=p.L,k=L/120;
-  const ridge=(fn,w)=>{c.save();c.translate(-0.55*k,0.65*k);fn();c.strokeStyle='rgba(30,20,10,0.7)';c.lineWidth=w;c.stroke();c.restore();c.save();c.translate(0.45*k,-0.55*k);fn();c.strokeStyle='rgba(255,226,160,0.55)';c.lineWidth=w*0.8;c.stroke();c.restore();};
+  const ridge=(fn,w)=>{c.save();c.translate(-0.55*k,0.65*k);fn();c.strokeStyle='rgba(18,13,8,0.62)';c.lineWidth=w;c.stroke();c.restore();c.save();c.translate(0.45*k,-0.55*k);fn();c.strokeStyle='rgba(226,220,188,0.42)';c.lineWidth=w*0.8;c.stroke();c.restore();};
   const g0=bodyAt(p,pr,0.2,0.85),g1=bodyAt(p,pr,0.24,0),g2=bodyAt(p,pr,0.2,-0.85);ridge(()=>{c.beginPath();c.moveTo(g0[0],g0[1]);c.quadraticCurveTo(g1[0],g1[1],g2[0],g2[1]);},1.4*k);
   for(const v of [0.5,0,-0.5])for(let u=0.3;u<0.76;u+=0.07){const q=bodyAt(p,pr,u+(v===0?0.035:0),v);const s=spineAt(p,u);const ang=Math.atan2(-s.ty,-s.tx);ridge(()=>{c.beginPath();c.arc(q[0],q[1],0.03*L,ang-1.15,ang+1.15);},1.0*k);}
-  const ey=bodyAt(p,pr,0.085,0.3);c.fillStyle='rgba(30,20,10,0.7)';c.beginPath();c.arc(ey[0]-0.5*k,ey[1]+0.6*k,0.03*L,0,7);c.fill();c.fillStyle='rgba(255,230,170,0.8)';c.beginPath();c.arc(ey[0]+0.4*k,ey[1]-0.5*k,0.022*L,0,7);c.fill();
-  c.fillStyle='rgba(40,28,16,0.9)';c.beginPath();c.arc(ey[0],ey[1],0.012*L,0,7);c.fill();}
+  const ey=bodyAt(p,pr,0.085,0.3);c.fillStyle='rgba(18,13,8,0.65)';c.beginPath();c.arc(ey[0]-0.5*k,ey[1]+0.6*k,0.03*L,0,7);c.fill();c.fillStyle='rgba(226,220,188,0.6)';c.beginPath();c.arc(ey[0]+0.4*k,ey[1]-0.5*k,0.022*L,0,7);c.fill();
+  c.fillStyle='rgba(30,22,14,0.9)';c.beginPath();c.arc(ey[0],ey[1],0.012*L,0,7);c.fill();}
 // 一组铜鱼的浮雕：先画投影，再画受光
 function bronzeRelief(poses,TR,cam,alpha=1){const z=cam.z;
   layerBegin(eb0,TR);for(const p of poses)bronzeSil(eb0,p);
   ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=0.6*alpha;ctx.filter=`brightness(0) blur(${(1.4*z).toFixed(1)}px)`;ctx.drawImage(EB0,-1.8*z,2.2*z);ctx.restore();
-  layerBegin(hctx,TR);for(const p of poses){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const q of p.sp){x0=Math.min(x0,q.x);y0=Math.min(y0,q.y);x1=Math.max(x1,q.x);y1=Math.max(y1,q.y);}
-    const g=hctx.createLinearGradient(x0,y1,x1,y0);g.addColorStop(0,'#4c3d25');g.addColorStop(0.55,'#735d38');g.addColorStop(1,'#9a7d4c');bronzeSil(hctx,p,g);}
+  layerBegin(hctx,TR);for(const p of poses){const s=spineAt(p,0.45),a=Math.atan2(s.ty,s.tx);const pt=hctx.createPattern(FPAT,'repeat');
+    pt.setTransform(new DOMMatrix().translate(s.x,s.y).rotate(a*180/Math.PI).scale(0.25).translate(-512,-512));bronzeSil(hctx,p,pt);}
+  // 鼓起来的鱼身：朝光的一侧（右上）亮一点，背光的一侧暗一点
+  hctx.globalCompositeOperation='source-atop';for(const p of poses){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const q of p.sp){x0=Math.min(x0,q.x);y0=Math.min(y0,q.y);x1=Math.max(x1,q.x);y1=Math.max(y1,q.y);}
+    const g=hctx.createLinearGradient(x0-10,y1+10,x1+10,y0-10);g.addColorStop(0,'rgba(10,7,4,0.34)');g.addColorStop(0.5,'rgba(10,7,4,0.06)');g.addColorStop(1,'rgba(240,232,205,0.1)');hctx.fillStyle=g;hctx.fillRect(x0-40,y0-40,x1-x0+80,y1-y0+80);}
+  hctx.globalCompositeOperation='source-over';
   const edge=(sx,sy,col,al)=>{eb1.reset();eb1.drawImage(EB0,0,0);eb1.globalCompositeOperation='destination-out';eb1.drawImage(EB0,sx,sy);eb1.globalCompositeOperation='source-in';eb1.fillStyle=col;eb1.fillRect(0,0,W,H);
     hctx.save();hctx.setTransform(1,0,0,1,0,0);hctx.globalCompositeOperation='source-atop';hctx.globalAlpha=al;hctx.filter=`blur(${(0.9*z).toFixed(1)}px)`;hctx.drawImage(EB1,0,0);hctx.restore();};
-  const dz=2.4*z;edge(-0.63*dz,0.77*dz,'rgb(236,206,146)',0.75);edge(0.63*dz,-0.77*dz,'rgb(26,18,10)',0.75);
+  const dz=2.4*z;edge(-0.63*dz,0.77*dz,'rgb(222,216,184)',0.62);edge(0.63*dz,-0.77*dz,'rgb(14,10,6)',0.78);
   hctx.setTransform(...TR);hctx.globalCompositeOperation='source-atop';for(const p of poses)bronzeDetail(hctx,p);
-  const pt=hctx.createPattern(PATINA,'repeat');pt.setTransform(new DOMMatrix([0.5,0,0,0.5,0,0]));hctx.fillStyle=pt;hctx.globalAlpha=0.85;hctx.fillRect(-30000,-3000,60000,6000);hctx.globalAlpha=1;hctx.globalCompositeOperation='source-over';
+  const pt=hctx.createPattern(PATINA,'repeat');pt.setTransform(new DOMMatrix([0.5,0,0,0.5,0,0]));hctx.fillStyle=pt;hctx.globalAlpha=0.5;hctx.fillRect(-30000,-3000,60000,6000);hctx.globalAlpha=1;hctx.globalCompositeOperation='source-over';
   blitLayer(HEROC,alpha);}
 // 头部转动：以 u0 处为轴，把鱼头往一侧掰
 function bendPose(p,u0,th){const N=p.N,piv=p.sp[Math.round(u0*N)];const sp=p.sp.map((q,i)=>{const u=i/N;if(u>=u0)return{...q};const a=th*Math.pow((u0-u)/u0,0.8);const dx=q.x-piv.x,dy=q.y-piv.y;const c=Math.cos(a),s=Math.sin(a);return{x:piv.x+dx*c-dy*s,y:piv.y+dx*s+dy*c};});

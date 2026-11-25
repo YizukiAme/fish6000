@@ -124,13 +124,13 @@ function drawYuan(c,p,rgb,al,bl){const L=p.L,k=L/190,pr=PROF.yuan;const cs=a=>`r
   c.strokeStyle=cs(.55);c.lineWidth=0.7*k;for(let j=1;j<tl.edge.length-1;j++){const q=tl.edge[j];c.beginPath();c.moveTo(tl.base[0],tl.base[1]);c.lineTo(lerp(tl.base[0],q[0],.94),lerp(tl.base[1],q[1],.94));c.stroke();}
   ribbon(c,jit(tl.edge,0.7*k,9),v=>1.5*k*(0.7+0.3*Math.sin(v*9)),cs(.92),9);
   pect(c,p,pr,0.25,k,cs(.24),cs(.8),0.14);
-  bodyFill(c,e);c.fillStyle=cs(.22);c.fill();
+  bodyFill(c,e);c.fillStyle=cs(.3);c.fill();
   c.save();bodyFill(c,e);c.clip();
-  if(bl>0)c.filter=`blur(${bl.toFixed(1)}px)`;bandPath(c,p,pr,0.03,0.8,1.15,0.25);c.fillStyle=cs(.24);c.fill();bandPath(c,p,pr,0.0,0.2,1.15,-1.15);c.fillStyle=cs(.12);c.fill();c.filter='none';
+  if(bl>0)c.filter=`blur(${bl.toFixed(1)}px)`;bandPath(c,p,pr,0.03,0.8,1.15,0.25);c.fillStyle=cs(.34);c.fill();bandPath(c,p,pr,0.0,0.2,1.15,-1.15);c.fillStyle=cs(.12);c.fill();c.filter='none';
   // 鳞：斜向网格（元青花鱼的画法），随身体弯曲
-  c.strokeStyle=cs(.36);c.lineWidth=0.6*k;
+  c.strokeStyle=cs(.42);c.lineWidth=0.6*k;
   for(const sgn of [1,-1])for(let v0=-4.2;v0<=4.2;v0+=0.24){c.beginPath();let on=false;for(let u=0.21;u<=0.79;u+=0.008){const v=v0+sgn*(u-0.5)*6;if(v<-1||v>1){on=false;continue;}const q=bodyAt(p,pr,u,v);if(!on){c.moveTo(q[0],q[1]);on=true;}else c.lineTo(q[0],q[1]);}c.stroke();}
-  c.fillStyle=cs(.40);for(const [u,v,r,s2] of [[0.3,0.42,.045,1],[0.42,-0.05,.04,2],[0.52,0.5,.042,3],[0.6,-0.32,.036,4],[0.68,0.25,.03,5],[0.37,-0.55,.03,6],[0.24,-0.12,.03,7],[0.56,0.05,.028,8]]){const q=bodyAt(p,pr,u,v);blob(c,q[0],q[1],r*L,s2*17);c.fill();}
+  c.fillStyle=cs(.55);for(const [u,v,r,s2] of [[0.3,0.42,.045,1],[0.42,-0.05,.04,2],[0.52,0.5,.042,3],[0.6,-0.32,.036,4],[0.68,0.25,.03,5],[0.37,-0.55,.03,6],[0.24,-0.12,.03,7],[0.56,0.05,.028,8]]){const q=bodyAt(p,pr,u,v);blob(c,q[0],q[1],r*L,s2*17);c.fill();}
   c.restore();
   ribbon(c,jit(e.top,0.7*k,1),v=>lerp(1.6,3.2,0.5+0.5*Math.sin(v*7+.5))*k*Math.min(1,v*12+.3,(1-v)*4+.3),cs(1),21,0.025);
   ribbon(c,jit(e.bot,0.7*k,2),v=>lerp(1.1,2.3,0.5+0.5*Math.sin(v*6+1.3))*k*Math.min(1,v*12+.3,(1-v)*4+.3),cs(.92),22,0.04);

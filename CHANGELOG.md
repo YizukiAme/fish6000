@@ -2,6 +2,13 @@
 
 English · [中文](CHANGELOG.zh-CN.md)
 
+## [v1.8] — 2026-11-26
+
+1. Redraw the Yangliuqing New Year print (1:45–1:53). A black-headed carp with red scales and a gold tail settles into the child’s arms beneath the inscription 蓮年有餘, set in Yuji Syuku.
+2. Show how the print takes shape. Four colour blocks are printed in sequence, then the face, lotus, clothing and tail are coloured by hand. Brush sounds follow the washes, and two light taps mark the eyes before the carp swims free.
+3. Give the bronze fish the basin’s mottled green patina and pitted surface. On the porcelain dish, cobalt pools along strokes and edges, with dark iron spots and soft bleeding beneath the glaze.
+4. Smooth the artwork in wide shots, including the final gallery view. Update the cover, station montage and documentation.
+
 ## [v1.7] — 2026-11-16
 
 1. Fade the title and seal in together on the closing black card, removing the separate stamping motion.
@@ -81,3 +88,5 @@ English · [中文](CHANGELOG.zh-CN.md)
 [v1.6]: https://github.com/YizukiAme/fish6000/compare/v1.5...v1.6
 
 [v1.7]: https://github.com/YizukiAme/fish6000/compare/v1.6...v1.7
+
+[v1.8]: https://github.com/YizukiAme/fish6000/compare/v1.7...v1.8

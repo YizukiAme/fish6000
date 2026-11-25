@@ -6,4 +6,7 @@ Source: https://github.com/notofonts/noto-cjk
 DejaVu Sans Mono: Bitstream Vera / DejaVu license (DejaVu-LICENSE.txt)
 Source: https://github.com/dejavu-fonts/dejavu-fonts
 
+Yuji Syuku (蓮年有餘): SIL Open Font License 1.1 (fonts/OFL-Yuji.txt in the repository, OFL-Yuji.txt on the live site)
+Source: https://github.com/Kinutafontfactory/Yuji
+
 The project MIT license does not replace these font licenses.
