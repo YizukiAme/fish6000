@@ -427,6 +427,20 @@ function nianFishPaint(c,p,k){
   redRim(g.lobes[1],g.lobes[1].right,g.lobes[1].right[65],1.35);
   redRim(g.lobes[2],g.lobes[2].left,g.lobes[2].left[61],1.4);
   redRim(g.lobes[3],g.lobes[3].right,g.lobes[3].right[67],1.32);
+  // Folded inner faces follow the same warp as the tail membrane.
+  const curls=[
+    [1,[[878,260],[889,275],[897,292],[897,308],[887,317]],[[880,263],[889,278],[894,294],[893,307],[887,317]]],
+    [2,[[942,404],[938,418],[926,432],[910,438],[892,442],[880,453]],[[937,402],[934,414],[924,427],[909,434],[890,438],[880,453]]],
+    [3,[[849,545],[839,560],[825,571],[811,574],[799,568],[790,561]],[[852,546],[843,561],[829,575],[812,579],[798,573],[790,561]]]
+  ];
+  for(const [i,outside,inside] of curls){
+    const map=q=>g.warp(q,UB8+TL8*clamp((q[0]-665+.30*Math.abs(q[1]-438))/320));
+    const lip=curvePts(outside,35).map(map),under=curvePts(inside,35).map(map);
+    c.save();path8(c,g.lobes[i].poly);c.clip();
+    const tone=c.createLinearGradient(...lip[0],...lip[22]);tone.addColorStop(0,'rgba(173,85,39,.04)');tone.addColorStop(.39,'rgba(173,85,39,.53)');tone.addColorStop(1,'rgba(198,109,47,.66)');
+    c.fillStyle=tone;polyFill(c,lip.concat(under.slice().reverse()));
+    c.fillStyle='rgba(255,221,119,.75)';kline(c,lip.slice(4,30),1.05*unit,{ti:.34,to:.39,sw:.03,n:35});c.restore();
+  }
   // 近侧尾扇的上下两叶在缺口之前共一张鳍膜。两片接缝也接着同一层水色。
   polyFill(c,g.bridge);
   const washFin=(f,from,to)=>{
@@ -720,7 +734,8 @@ function scene8d(c,part,blk){c.lineJoin='round';c.lineCap='round';
     if(blk==='a:cloth'){
       gradFill(pts,...shade,[[0,'rgba(143,199,166,.33)'],[.51,'rgba(153,206,172,.35)'],[1,'rgba(111,175,146,.24)']]);
       c.save();path8(c,pts);c.clip();
-      for(const [q,w] of folds){stroke(q.map(([x,y])=>[x-w*.32,y-w*.29]),w*.48,'rgba(194,218,181,.21)');}
+      for(const [q,w] of folds){stroke(q.map(([x,y])=>[x-w*.32,y-w*.29]),w*.48,'rgba(194,218,181,.21)');}if(outline[0][0]===509){const collar=[[515,254],[516,271],[516,289],[513,312],[506,336],[503,348],[505,356]],elbow=[[505,357],[516,347],[530,341],[544,332],[555,320],[563,316]];
+       for(const [w,a] of [[18,.11],[13,.14],[9,.18],[5,.14]]){stroke(collar,w,'rgba(47,102,87,'+(a*.93)+')');stroke(elbow,w*.73,'rgba(47,102,87,'+(a*.76)+')');}}
       c.restore();
     }
     KC(pts,1.46);
@@ -758,6 +773,11 @@ function scene8d(c,part,blk){c.lineJoin='round';c.lineCap='round';
   };
 
   const farHand=(tipsOnly=false)=>{
+    c.save();
+    const p=window.palmPosition8||0;
+    const lift=smooth(0,.22,p)*(1-smooth(.23,.64,p)),relax=smooth(.21,.94,p);
+    c.translate(253,419);c.rotate(-.09*lift+.11*relax);c.scale(1,1-.026*relax);c.translate(-253,-419);
+    let fingerIndex=0;
     const hand=contour([[247,418],[255,412],[272,416],[286,426],[289,435],[287,448],[290,455],[288,466],[282,476],[274,483],[267,482],[260,476],[256,468],[253,459],[249,451],[246,439],[241,430]]);
     if(!tipsOnly){skinForm(hand,256,428,42,55);fleshLine(hand.concat([hand[0]]),1.45);}
     // 指根连着掌，三个指尖由低到高向鱼身翻。小弯线各自止在指侧。
@@ -769,12 +789,16 @@ function scene8d(c,part,blk){c.lineJoin='round';c.lineCap='round';
       [[[264,481],[259,474],[258,467],[261,460],[266,455.5],[271,455.5],[275.5,458.2],[276.6,462.6],[275.4,466.6],[279,470.5],[283,475],[280.5,481],[274.5,485],[268,484]],
        [[263,468],[267,467],[270,468]],[[267.6,458.4],[268.9,455.8],[271.1,456],[272.8,458.3],[271.6,459.2],[269.1,458.8]]]
     ]){
-      const p=contour(tip);skinForm(p,tip[3][0],tip[3][1]+1,14,20);
-      paint('face',()=>{gradFill(p,tip[3][0]+5,tip[3][1],tip[3][0]-5,tip[3][1]+14,[[0,'rgba(251,222,186,.06)'],[1,'rgba(229,150,104,.46)']]);});
+      const index=fingerIndex++; const pivots=[[254,452],[261,465],[270,478]],pivot=pivots[index];
+      const fan=smooth(.22+index*.105,.72+index*.11,p);
+      c.save();c.translate(...pivot);c.rotate(-[.74,.59,.33][index]*fan-.055*lift);c.translate(-pivot[0],-pivot[1]);
+      const ptip=contour(tip);skinForm(ptip,tip[3][0],tip[3][1]+1,14,20);
+      paint('face',()=>{gradFill(ptip,tip[3][0]+5,tip[3][1],tip[3][0]-5,tip[3][1]+14,[[0,'rgba(251,222,186,.06)'],[1,'rgba(229,150,104,.46)']]);});
       fleshLine(tip.slice(0,tip.length>12?10:tip.length),1.3);
       const n=contour(nail);light('face',()=>{c.fillStyle='rgba(255,252,244,.9)';polyFill(c,n);});
-      paint('face',()=>{c.fillStyle='rgba(236,170,156,.22)';polyFill(c,n);});fleshLine(nail.concat([nail[0]]),.62);
+      paint('face',()=>{c.fillStyle='rgba(236,170,156,.22)';polyFill(c,n);});fleshLine(nail.concat([nail[0]]),.62);c.restore();
     }
+    c.restore();
   };
   if(part==='back'){
     // 袄身从颈窝沿胸腹落下来，左肩绕到鱼后才见袖口。
@@ -1007,7 +1031,7 @@ function scene8d(c,part,blk){c.lineJoin='round';c.lineCap='round';
     }
     // 托鱼手的掌根仍在鱼后，只有屈指的一侧跨过鱼头轮廓。
     farHand(true);
-    fleshLine([[267,484],[274.5,485.2],[280.6,481.2],[283.2,475]],1.55);
+    if(!window.palmPosition8)fleshLine([[267,484],[274.5,485.2],[280.6,481.2],[283.2,475]],1.55);
   }
   c.restore();
 }
@@ -1047,7 +1071,33 @@ function paintSweep8(part,g,k,pass,composite){if(k<=0)return;const T=B8.tmp,tx=T
     const fx=lerp(ax-ux*soft,bx+ux*soft,k),fy=lerp(ay-uy*soft,by+uy*soft,k);const gr=tx.createLinearGradient(fx-ux*soft,fy-uy*soft,fx+ux*soft,fy+uy*soft);gr.addColorStop(0,'#000');gr.addColorStop(1,'rgba(0,0,0,0)');
     tx.globalCompositeOperation='destination-in';tx.fillStyle=gr;tx.fillRect(0,0,P8W,P8H);ctx.save();ctx.globalCompositeOperation=comp;ctx.drawImage(T,...PRINT_RECT8);ctx.restore();};
   put(B8[pass+part+g],composite);}
-function drawPrint8(part,t){
+const reliefHandFrames8=new Map();
+function drawReleasedHand8(part,t){
+  const raw=smooth(T8SLIP-.13,T8SLIP+.65,t);
+  if(raw<=0){drawPrintArt8(part,t);return;}
+  const A=T8L(RP8(210,403)),B=T8L(RP8(307,496)),x0=Math.floor((A[0]+PR8)*MS8),y0=Math.floor((A[1]+PR8Y)*MS8),x1=Math.ceil((B[0]+PR8)*MS8),y1=Math.ceil((B[1]+PR8Y)*MS8);
+  const dx=S8X+x0/MS8-PR8,dy=S8Y+y0/MS8-PR8Y,ww=x1-x0,hh=y1-y0;
+  const n=Math.max(0,Math.min(24,Math.round(raw*24))),key=part+n;
+  if(!reliefHandFrames8.has(key)){
+    const temp=mk(ww,hh),dest=mk(ww,hh),tc=temp.getContext('2d'),dc=dest.getContext('2d');
+    const plate=(block)=>{tc.reset();tc.setTransform(MS8,0,0,MS8,P8W/2-x0,P8H/2-y0);tc.fillStyle='#000';tc.strokeStyle='#000';scene8(tc,part,block);tc.setTransform(1,0,0,1,0,0);};
+    const put=(comp='source-over',alpha=1,ox=0,oy=0)=>{dc.save();dc.globalCompositeOperation=comp;dc.globalAlpha=alpha;dc.drawImage(temp,ox,oy);dc.restore();};
+    const pigment=()=>{tc.save();tc.globalCompositeOperation='source-atop';tc.globalAlpha=.76;tc.translate(-x0,-y0);tc.fillStyle=tc.createPattern(B8.pigment,'repeat');tc.fillRect(x0,y0,ww,hh);tc.restore();};
+    window.palmPosition8=n/24;
+    if(part==='back'){dc.drawImage(B8.paper,-x0,-y0);}
+    else{plate('sil');tc.globalCompositeOperation='source-in';tc.drawImage(B8.paper,-x0,-y0);put();}
+    for(const g of ['face','lotus','cloth']){plate('l:'+g);put();}
+    for(const b of BLK){plate(b.k);tc.globalCompositeOperation='source-in';tc.fillStyle='rgb('+b.col.join(',')+')';tc.fillRect(0,0,ww,hh);put('multiply',.82,b.off[0]*MS8,b.off[1]*MS8);}
+    for(const g of ['face','lotus','cloth']){plate('p:'+g);pigment();put('multiply');}
+    for(const g of ['lotus','cloth']){plate('a:'+g);pigment();put();}
+    plate('line');tc.globalCompositeOperation='source-in';tc.fillStyle='rgb(28,22,20)';tc.fillRect(0,0,ww,hh);put('source-over',.91);
+    window.palmPosition8=0;reliefHandFrames8.set(key,dest);
+  }
+  ctx.save();ctx.beginPath();ctx.rect(-30000,-30000,60000,60000);ctx.rect(dx,dy,ww/MS8,hh/MS8);ctx.clip('evenodd');drawPrintArt8(part,t);ctx.restore();
+  ctx.drawImage(reliefHandFrames8.get(key),dx,dy,ww/MS8,hh/MS8);
+}
+function drawPrint8(part,t){drawReleasedHand8(part,t);}
+function drawPrintArt8(part,t){
   if(part==='front')ctx.drawImage(B8.frontKO,...PRINT_RECT8);
   for(const g of ['face','lotus','cloth'])paintSweep8(part,g,p8k(t,g),'lt','source-over');   // 先扑粉
   BLK.forEach((B,i)=>{const k=b8k(t,i);if(k<=0)return;ctx.save();ctx.globalAlpha=0.9*k;ctx.globalCompositeOperation='multiply';ctx.translate(...B.off);ctx.drawImage(B8['c'+part+B.k],...PRINT_RECT8);ctx.restore();});

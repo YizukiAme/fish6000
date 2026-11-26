@@ -29,25 +29,109 @@ const OBI_FISH=[[[0,0],[0.07,0.45],[0.2,0.95]],[[0,0],[0.07,-0.45],[0.2,-0.95]],
   [[0.8,0.3],[1.0,1.0]],[[0.8,-0.3],[1.0,-1.0]],[[0.09,0.33],[0.115,0.33]]];
 const LDIR2=[-0.6,0.8];// 刻槽里背光的那一侧槽壁朝这个方向（光从右上来）
 // ---------- 刀刻：一刀一刀，两头尖、中段宽（入刀、出刀）；槽底暗，朱砂比槽窄、一刀一刀深浅不一，背光的槽壁亮一线 ----------
-function knifePoly(pts,w,ti,to){const n=pts.length;const S=[0];for(let i=1;i<n;i++)S.push(S[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));const Ls=S[n-1]||1;const Lp=[],Rp=[];
-  for(let i=0;i<n;i++){const a=pts[Math.max(0,i-1)],b=pts[Math.min(n-1,i+1)];let dx=b[0]-a[0],dy=b[1]-a[1];const l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;const v=S[i]/Ls;
-    const f=Math.min(1,v/ti,(1-v)/to);const hw=w/2*Math.max(0.1,Math.pow(Math.max(0,f),0.55));Lp.push([pts[i][0]-dy*hw,pts[i][1]+dx*hw]);Rp.push([pts[i][0]+dy*hw,pts[i][1]-dx*hw]);}
-  return Lp.concat(Rp.reverse());}
+
 function fillPoly(c,P){c.beginPath();P.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));c.closePath();c.fill();}
 function resample(k,step){const out=[k[0]];for(let i=1;i<k.length;i++){const a=k[i-1],b=k[i];const n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/step));for(let j=1;j<=n;j++)out.push([lerp(a[0],b[0],j/n),lerp(a[1],b[1],j/n)]);}return out;}
 // 折线在拐角处断开（刻字是一刀一刀刻的），再细分，好让每一刀两头收尖
 function toCuts(polys,step=1.2){const cuts=[];for(const P of polys){let cur=[P[0]];for(let i=1;i<P.length;i++){cur.push(P[i]);if(i<P.length-1){const a=P[i-1],b=P[i],c2=P[i+1];let d=Math.atan2(c2[1]-b[1],c2[0]-b[0])-Math.atan2(b[1]-a[1],b[0]-a[0]);d=Math.atan2(Math.sin(d),Math.cos(d));if(Math.abs(d)>0.7){cuts.push(cur);cur=[P[i]];}}}cuts.push(cur);}
   return cuts.map(k=>resample(k,step));}
-function inciseCuts(c,cuts,w,cin,al,seed){const r=rng(seed);
-  c.fillStyle=`rgba(72,46,28,${(0.84*al).toFixed(3)})`;for(const k of cuts)fillPoly(c,knifePoly(k,w,0.18,0.28));
-  if(cin>0)for(const k of cuts){const a=cin*al*(0.3+0.7*r());c.fillStyle=`rgba(168,44,30,${(0.85*a).toFixed(3)})`;fillPoly(c,knifePoly(k,w*0.58,0.3,0.4));}
-  c.save();c.translate(LDIR2[0]*w*0.32,LDIR2[1]*w*0.32);c.fillStyle=`rgba(255,240,212,${(0.34*al).toFixed(3)})`;for(const k of cuts)fillPoly(c,knifePoly(k,w*0.28,0.3,0.45));c.restore();}
+function inciseCuts(c, cuts, width, cinnabar, opacity, seed) {
+  let previousGroup = -1, withinGroup = 0;
+  for (const [cutIndex, points] of cuts.entries()) {
+    const group = points.strokeGroup;
+    if (group !== previousGroup) withinGroup = 0;
+    const random = rng(seed * 1543 + (group === undefined ? cutIndex : group * 13 + withinGroup) * 37);
+    previousGroup = group;
+    withinGroup++;
+    const distances = [0];
+    for (let i = 1; i < points.length; i++) {
+      distances.push(distances[i-1] + Math.hypot(points[i][0] - points[i-1][0], points[i][1] - points[i-1][1]));
+    }
+    const length = distances[distances.length-1];
+    if (!length) continue;
+    const entry = .07 + random() * .24;
+    const exit = .22 + random() * .33;
+    const pressure = .73 + random() * .38;
+    const phase = random() * 5;
+    // The intersections inside the fish are shallower secondary cuts.
+    const scale = group >= 5 && group <= 8 ? .68 : (group >= 9 && group <= 12 ? .82 : 1);
+    const half = width * .53 * pressure * scale;
+    const redStart = .04 + random() * .24, redEnd = .62 + random() * .32;
+    const pigment = random();
+    const fishOutline = group !== undefined && (group <= 4 || group >= 13);
+    const walls = [[],[]], floor = [], pale = [], red = [[],[]];
+    for (let i = 0; i < points.length; i++) {
+      const a = points[Math.max(0,i-1)], b = points[Math.min(points.length-1,i+1)];
+      const l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+      const nx = (a[1] - b[1]) / l, ny = (b[0] - a[0]) / l;
+      const u = distances[i] / length;
+      const profile = Math.min(1, u / entry, (1-u) / exit);
+      const h = half * ((fishOutline ? .06 : .025) + (fishOutline ? .94 : .975)*Math.pow(profile,.64)) * (1 + .13 * Math.sin(6.2*u + phase));
+      const at = d => [points[i][0] + nx*d*h, points[i][1] + ny*d*h];
+      const light = nx * LDIR2[0] + ny * LDIR2[1];
+      const bed = -.36 * light + .07*Math.sin(5.1*u + phase);
+      walls[0].push(at(1));
+      walls[1].push(at(-1));
+      floor.push(at(bed));
+      pale.push(at(bed + (Math.sign(light)-bed)*Math.abs(light)));
+      if (u >= redStart && u <= redEnd) {
+        const taper = Math.min(1,(u-redStart)*12,(redEnd-u)*9);
+        red[0].push(at(bed + .46*taper));
+        red[1].push(at(bed - .48*taper));
+      }
+    }
+    const tone = .82 + random() * .16;
+    c.fillStyle = (fishOutline ? 'rgba(107,54,35,' : 'rgba(68,45,30,') + (tone*opacity) + ')';
+    fillPoly(c,walls[0].concat(walls[1].reverse()));
+    c.fillStyle = 'rgba(225,200,158,' + (.40*opacity) + ')';
+    fillPoly(c,floor.concat(pale.reverse()));
+    if (red[0].length > 1 && (pigment > .28 || fishOutline) && cinnabar > 0) {
+      c.fillStyle = 'rgba(156,52,34,' + ((.52+.46*pigment)*cinnabar*opacity) + ')';
+      fillPoly(c,red[0].concat(red[1].reverse()));
+    }
+  }
+}
 function drawOBI(c,ch,x,y,s,w,cin,al,seed=7){const r=rng(seed*7+3);const cuts=toCuts(OBI[ch].map(st=>st.map(q=>[x+q[0]*s+(r()-.5)*s*0.03,y+q[1]*s+(r()-.5)*s*0.03])));
   let a=0;for(const k of cuts)for(let i=1;i<k.length-1;i++){a=a*0.7+(r()-.5)*0.18;k[i]=[k[i][0]+a,k[i][1]+a*0.6];}inciseCuts(c,cuts,w,cin,al,seed);}
-function glyphFishCuts(p,H){const polys=OBI_FISH.slice(0,-1).map(st=>{const out=[];const n=10;for(let i=0;i<st.length-1;i++)for(let j=(i?1:0);j<=n;j++){const v=j/n;out.push(BP(p,lerp(st[i][0],st[i+1][0],v),lerp(st[i][1],st[i+1][1],v)*H));}return out;});return toCuts(polys,1.0);}
+function glyphFishCuts(p, H) {
+  const cuts = [];
+  for (const [group, stroke] of OBI_FISH.slice(0,-1).entries()) {
+    let points = [];
+    for (let j = 1; j < stroke.length; j++) {
+      const a = stroke[j-1], b = stroke[j];
+      for (let i = points.length ? 1 : 0; i <= 12; i++) {
+        const u = i/12;
+        points.push(BP(p, lerp(a[0],b[0],u), H*lerp(a[1],b[1],u)));
+      }
+      const next = stroke[j+1];
+      if (next) {
+        const incoming = Math.atan2(.21*(b[1]-a[1]),b[0]-a[0]);
+        const outgoing = Math.atan2(.21*(next[1]-b[1]),next[0]-b[0]);
+        if (Math.cos(outgoing-incoming) > Math.cos(.7)) continue;
+      }
+      points.strokeGroup = group;
+      cuts.push(points);
+      points = [points[points.length-1]];
+    }
+  }
+  return cuts;
+}
+function incisedFishEye(c,p,H,w) {
+  const e = OBI_FISH[OBI_FISH.length-1][0];
+  const q = BP(p,e[0],e[1]*H), r = BP(p,e[0]+.025,e[1]*H);
+  c.save();
+  c.translate(q[0],q[1]);
+  c.rotate(Math.atan2(r[1]-q[1],r[0]-q[0]));
+  c.fillStyle = 'rgba(74,45,30,.95)';
+  c.beginPath();
+  c.moveTo(-.56*w,0);
+  c.quadraticCurveTo(-.05*w,-.68*w,.66*w,-.08*w);
+  c.quadraticCurveTo(.01*w,.62*w,-.56*w,0);
+  c.fill();
+  c.restore();
+}
 function drawGlyphFish(c,p,mode){const H=0.21*p.L,w=Math.max(1.6,0.042*p.L);
-  if(mode==='incise'){inciseCuts(c,glyphFishCuts(p,H),w,1,1,11);const e=OBI_FISH[OBI_FISH.length-1][0],q=BP(p,e[0],e[1]*H);
-    c.fillStyle='rgba(72,46,28,0.84)';c.beginPath();c.arc(q[0],q[1],w*0.55,0,7);c.fill();c.fillStyle='rgba(168,44,30,0.8)';c.beginPath();c.arc(q[0],q[1],w*0.32,0,7);c.fill();return;}
+  if(mode==='incise'){inciseCuts(c,glyphFishCuts(p,H),w,1,1,11);incisedFishEye(c,p,H,w);return;}
   // 朱书：毛笔写的红字
   c.save();for(const [k,st] of OBI_FISH.entries()){const pts=[];const n=Math.max(6,st.length*8);for(let i=0;i<n;i++){const f=i/(n-1)*(st.length-1);const a=Math.min(st.length-2,Math.floor(f)),v=f-a;pts.push(BP(p,lerp(st[a][0],st[a+1][0],v),lerp(st[a][1],st[a+1][1],v)*H));}
     if(st.length===2&&k===OBI_FISH.length-1){c.fillStyle='rgba(204,62,38,0.96)';c.beginPath();c.arc(pts[0][0],pts[0][1],w*0.6,0,7);c.fill();continue;}
@@ -58,10 +142,10 @@ const PLO=(()=>{const R=[[0,-171],[20,-183],[52,-180],[84,-167],[104,-144],[113,
   const ctrl=R.concat(R.slice(1,-1).map(([x,y])=>[-x,y]).reverse());const n=ctrl.length;const sm=[];
   for(let i=0;i<n;i++){const p0=ctrl[(i-1+n)%n],p1=ctrl[i],p2=ctrl[(i+1)%n],p3=ctrl[(i+2)%n];for(let j=0;j<8;j++){const t=j/8,t2=t*t,t3=t2*t;const cr=k=>0.5*(2*p1[k]+(-p0[k]+p2[k])*t+(2*p0[k]-5*p1[k]+4*p2[k]-p3[k])*t2+(-p0[k]+3*p1[k]-3*p2[k]+p3[k])*t3);sm.push([cr(0)+(p1[0]===0&&j===0?0:0),cr(1)]);}}
   const N=sm.length,r=rng(201),disp=new Float32Array(N);let a=0;for(let i=0;i<N;i++){a=a*0.86+(r()-.5)*0.6;disp[i]=a;}
-  for(const [f,depth,wd] of [[0.06,2.6,5],[0.19,2.0,4],[0.31,3.4,6],[0.43,1.8,4],[0.64,2.6,5],[0.92,3.0,6]]){const ci=Math.floor(N*f);for(let k=-wd;k<=wd;k++){const i=(ci+k+N)%N;disp[i]-=depth*Math.pow(1-Math.abs(k)/wd,0.6)*(0.75+0.5*r());}}
+  for(const [f,depth,wd] of [[0.06,2.6,5],[0.18,3.3,3],[0.29,5.4,3],[0.361,8.7,3],[0.43,1.8,4],[0.64,2.6,5],[0.84,5.6,3],[0.92,3.0,6]]){const ci=Math.floor(N*f);for(let k=-wd;k<=wd;k++){const i=(ci+k+N)%N;disp[i]-=depth*Math.pow(1-Math.abs(k)/wd,0.6)*(0.75+0.5*r());}}
   const out=[];for(let i=0;i<N;i++){const A=sm[(i-1+N)%N],B=sm[(i+1)%N];let nx=B[1]-A[1],ny=-(B[0]-A[0]);const l=Math.hypot(nx,ny)||1;out.push([sm[i][0]+nx/l*disp[i],sm[i][1]+ny/l*disp[i]]);}
   const near=(x,y)=>{let bi=0,bd=1e9;out.forEach((q,i)=>{const d=Math.hypot(q[0]-x,q[1]-y);if(d<bd){bd=d;bi=i;}});return bi;};
-  const iB=near(-40,176),iA=near(-113,104);const brk=jag([out[iB],[-58,154],[-70,140],[-84,128],[-98,119],out[iA]],3.0,207);
+  const iB=near(-40,176),iA=near(-113,104);const brk=jag([out[iB],[-49,167],[-51,155],[-58,156],[-68,141],[-73,138],[-72,132],[-86,132],[-96,120],[-105,119],out[iA]],1.8,207);
   return{pts:out.slice(0,iB).concat(brk,out.slice(iA+1)),brk};})();
 const PL_OUT=PLO.pts,BREAK_PTS=PLO.brk;
 const MS2=3,PLW=Math.ceil(300*MS2),PLH=Math.ceil(392*MS2);
@@ -71,55 +155,187 @@ function jag(pts,amp,seed){const r=rng(seed);const out=[];for(let i=0;i<pts.leng
 const CRK_OLD=[[[-38,-162],[-36,-122],[-39,-84]],[[-37,-130],[-16,-140]],[[40,-164],[38,-126],[41,-92]],[[39,-136],[18,-146]],[[-40,40],[-38,82],[-41,122]],[[-39,74],[-18,66]],[[36,100],[34,128],[37,150]],[[35,114],[14,106]]].map((s,i)=>jag(s,1.4,300+i));
 const CRK_NEW_STEM=jag([[40,12],[39,-12],[41,-38]],2.0,333),CRK_NEW_STEM2=jag([[40,12],[41,50],[39,92]],2.0,334),CRK_NEW_BR=jag([[40,12],[14,9],[-14,10],[-34,6]],1.8,335);
 // 刻辞：右边“贞：王其[鱼]”，左边对贞“不其雨”；右边甲桥上占辞“王占曰：吉”，左下“今夕亡”（右下留给主角游上来的路）
-const INSCR=[['贞',72,-116,44],['王',72,-68,44],['其',72,-21,44],['不',-72,-116,44],['其',-72,-68,44],['雨',-72,-21,44],
-  ['王',118,-46,24],['占',118,-20,24],['曰',118,6,24],['吉',118,32,24],['今',-98,22,24],['夕',-98,48,24],['亡',-98,74,24]];
+const INSCR=[['贞',66,-116,40],['王',69,-74,36],['其',73,-33,39],['不',-68,-124,37],['其',-72,-83,42],['雨',-76,-40,34],
+  ['王',111,-54,21],['占',116,-31,25],['曰',119,-7,20],['吉',119,17,25],['今',-99,9,21],['夕',-101,32,23],['亡',-97,60,23]];
 let PL2=null;
+function boneLineRim(c, points, widths, color, dx = 0, dy = 0) {
+  const left = [], right = [];
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i], a = points[Math.max(0,i-1)], b = points[Math.min(points.length-1,i+1)];
+    const length = Math.hypot(b[0]-a[0],b[1]-a[1]) || 1;
+    const nx = (a[1]-b[1])*widths[i]/(2*length), ny = (b[0]-a[0])*widths[i]/(2*length);
+    left.push([p[0]+dx+nx,p[1]+dy+ny]); right.push([p[0]+dx-nx,p[1]+dy-ny]);
+  }
+  c.fillStyle = color; fillPoly(c,left.concat(right.reverse()));
+}
 function prepPlastron(){const c=mk(PLW,PLH);const x=c.getContext('2d');const T=(cx)=>cx.setTransform(MS2,0,0,MS2,PLW/2,PLH/2);
   // 软边遮罩：离边缘的远近
   const m=mk(PLW,PLH);const mx=m.getContext('2d');T(mx);mx.fillStyle='#fff';plPath(mx);mx.fill();
   const mb=mk(PLW,PLH);const mbx=mb.getContext('2d');mbx.filter=`blur(${9*MS2}px)`;mbx.drawImage(m,0,0);
   const md=mb.getContext('2d').getImageData(0,0,PLW,PLH).data,mm=mx.getImageData(0,0,PLW,PLH).data;
-  // 骨色：象牙白到黄褐，有大块的土沁、中等的斑驳、顺着长的细骨纹、毛孔
-  const img=x.createImageData(PLW,PLH);const d=img.data;const n1=noise2(211,5,6),n2=noise2(212,26,30),n3=noise2(213,150,180),n4=noise2(214,3,4),n5=noise2(216,10,120),n6=noise2(217,14,16);const r=rng(215);
-  for(let py=0;py<PLH;py++)for(let px=0;px<PLW;px++){const i=(py*PLW+px)*4;if(mm[i+3]<2)continue;const u=px/PLW,v=py/PLH;const inner=md[i]/255;
-    const wu=(n1(u*5,v*6)-0.5)*0.9,wv=(n2(u*26,v*30)-0.5)*0.5;const stain=clamp((n4(u*3+wu,v*4+wu)-0.42)*1.5),blot=clamp((n6(u*14+wu*6+wv*3,v*16-wu*5+wv*3)-0.64)*2.0);
-    let R=lerp(230,178,stain*0.75),G=lerp(212,146,stain*0.8),B=lerp(174,98,stain*0.9);R=lerp(R,150,blot*0.5);G=lerp(G,112,blot*0.55);B=lerp(B,70,blot*0.6);
-    let lum=1+(n1(u*5,v*6)-0.5)*0.1+(n2(u*26,v*30)-0.5)*0.09+(n5(u*10,v*120)-0.5)*0.06+(n3(u*150,v*180)-0.5)*0.05+(r()-.5)*0.04;
-    const edge=clamp(1-inner*1.3);lum*=1-0.24*edge;R=lerp(R,150,edge*0.35);G=lerp(G,116,edge*0.4);B=lerp(B,78,edge*0.45);
-    if(r()<0.004)lum*=0.72+0.18*r();
-    d[i]=clamp(R*lum,0,255);d[i+1]=clamp(G*lum,0,255);d[i+2]=clamp(B*lum,0,255);d[i+3]=mm[i+3];}
+  // 磨治过的腹甲表面平整。粗糙度集中于残缘和片状斑驳处，露出的浅面留有呼吸。
+  const img=x.createImageData(PLW,PLH), d=img.data;
+  const cloudy=noise2(421,8,10), patch=noise2(422,23,28), grain=noise2(423,110,148);
+  const grit=noise2(424,320,350), fiber=noise2(425,56,28), dust=rng(426);
+  const areas=[
+    [-105,-43,43,62,.88], [66,-139,52,39,.70], [99,36,48,66,.84],
+    [-51,120,33,48,.77], [9,-27,54,39,.29], [20,156,22,31,.47]
+  ];
+  const byX=areas.map(([cx,,rx])=>Array.from({length:PLW},(_,i)=>Math.exp(-Math.pow(((i-PLW/2)/MS2-cx)/rx,2))));
+  const byY=areas.map(([,cy,,ry,amount])=>Array.from({length:PLH},(_,i)=>amount*Math.exp(-Math.pow(((i-PLH/2)/MS2-cy)/ry,2))));
+  for(let py=0;py<PLH;py++)for(let px=0;px<PLW;px++){
+    const i=(py*PLW+px)*4;
+    if(mm[i+3]<2)continue;
+    const u=px/PLW,v=py/PLH;
+    const large=cloudy(u*8,v*10), mid=patch(u*23,v*28);
+    const f=grain(u*100+mid*4,v*137+large*4), speck=grit(u*316+mid*2,v*344+mid*2);
+    const edge=clamp((.94-md[i+3]/255)/.45), wear=byX.reduce((value,row,j)=>value+row[px]*byY[j][py],0);
+    const field=wear*.53+large*.65+mid*.51+f*.27+edge*.30;
+    const stain=smooth(.77,1.36,field);
+    const crust=stain*smooth(.37,.85,f*.51+speck*.49);
+    const chips=stain*smooth(.69,.88,speck*.67+f*.33);
+    const chalk=(1-stain*.67)*smooth(.52,.85,mid*.48+f*.32+speck*.2);
+    const grey=smooth(.47,.80,cloudy(u*6+.9,v*8+1.1))*(.28+stain*.62);
+    const longitudinal=fiber(u*51+large*2,v*24+mid);
+    const lum=(large-.5)*11+(mid-.5)*13+(f-.5)*(10+stain*14)+(speck-.5)*(6+stain*15)
+      +(longitudinal-.5)*(3+edge*3)+(dust()-.5)*(4+stain*8)-crust*19-chips*24+chalk*12-edge*5;
+    d[i]  =222+lum-stain*26-grey*19;
+    d[i+1]=206+lum-stain*40-grey*13;
+    d[i+2]=178+lum-stain*55-grey*2;
+    d[i+3]=mm[i+3];
+  }
   x.putImageData(img,0,0);T(x);
   x.save();plPath(x);x.clip();x.lineCap='round';x.lineJoin='round';
-  // 断口：新鲜的骨茬颜色浅、多孔
-  x.beginPath();BREAK_PTS.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.strokeStyle='rgba(238,228,204,0.8)';x.lineWidth=5;x.stroke();
-  for(let k=0;k<180;k++){const q=BREAK_PTS[Math.floor(r()*BREAK_PTS.length)];x.fillStyle=`rgba(120,96,64,${0.2+r()*0.3})`;x.beginPath();x.arc(q[0]+(r()-.5)*7,q[1]+(r()-.5)*7,0.3+r()*0.7,0,7);x.fill();}
-  // 盾沟：软软的浅槽（一道暗、旁边一线亮），左右不完全对称
-  const sulcus=(pts,w,al)=>{const P=resample(pts,2);x.save();x.beginPath();P.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.filter=`blur(${(1.1*MS2).toFixed(1)}px)`;x.strokeStyle=`rgba(92,62,38,${al})`;x.lineWidth=w;x.stroke();
-    x.filter=`blur(${(0.5*MS2).toFixed(1)}px)`;x.translate(-0.8,1.0);x.strokeStyle=`rgba(255,246,226,${(al*0.32).toFixed(3)})`;x.lineWidth=w*0.4;x.stroke();x.restore();};
-  const wob=(pts,a,sd)=>{const r3=rng(sd);return resample(pts,6).map(q=>[q[0]+(r3()-.5)*a,q[1]+(r3()-.5)*a]);};
-  sulcus(wob([[0,-171],[1,-120],[-1,-60],[1,0],[-1,70],[0,152]],1.2,221),1.6,0.5);
-  for(const [sd,yl,yr,pts] of [[222,-140,-137,[[0,0],[40,-8],[70,-16],[98,-22]]],[223,-79,-74,[[0,0],[50,-2],[90,-10],[120,-20]]],[224,-6,-3,[[0,0],[60,2],[110,-1],[147,-6]]],[225,73,77,[[0,0],[50,4],[90,12],[118,24]]],[226,128,131,[[0,0],[34,6],[64,14],[92,22]]]]){
-    sulcus(wob(pts.map(q=>[q[0],q[1]+yr]),1.0,sd),1.4,0.42);sulcus(wob(pts.map(q=>[-q[0],q[1]+yl]),1.0,sd+50),1.4,0.42);}
-  // 骨缝：细、浅、不规则（和盾沟不在一处）；上面一块菱形的内腹甲
-  const suture=(pts,sd)=>{const r3=rng(sd);const P=resample(pts,1.8);x.beginPath();P.forEach((q,i)=>{const yy=q[1]+(i%2?0.7:-0.7)*(0.3+r3()),xx=q[0]+(r3()-.5)*0.9;i?x.lineTo(xx,yy):x.moveTo(xx,yy);});x.strokeStyle='rgba(92,64,40,0.17)';x.lineWidth=0.45;x.stroke();};
-  suture([[0,-142],[24,-114],[0,-84],[-24,-114],[0,-142]],231);
-  // 旧的兆：背面凿过的地方正面颜色深一点；钻过、灼过的地方一团焦痕；然后是裂纹
-  for(let k=0;k<CRK_OLD.length;k+=2){const st=CRK_OLD[k],br=CRK_OLD[k+1];const a0=st[0],a1=st[st.length-1];const cx=(a0[0]+a1[0])/2,cy=(a0[1]+a1[1])/2;
-    x.save();x.translate(cx,cy);x.rotate(Math.atan2(a1[1]-a0[1],a1[0]-a0[0]));const g=x.createRadialGradient(0,0,2,0,0,30);g.addColorStop(0,'rgba(120,86,54,0.16)');g.addColorStop(1,'rgba(120,86,54,0)');x.scale(1,0.32);x.fillStyle=g;x.beginPath();x.arc(0,0,30,0,7);x.fill();x.restore();
-    const o=br[0];for(let j=0;j<4;j++){const ox=o[0]+(br[br.length-1][0]-o[0])*0.25+(r()-.5)*5,oy=o[1]+(r()-.5)*5,rr=6+r()*6;const g2=x.createRadialGradient(ox,oy,0,ox,oy,rr);g2.addColorStop(0,'rgba(64,36,16,0.34)');g2.addColorStop(0.6,'rgba(88,52,24,0.16)');g2.addColorStop(1,'rgba(92,56,26,0)');x.fillStyle=g2;x.fillRect(ox-rr,oy-rr,2*rr,2*rr);}}
-  for(const s of CRK_OLD){x.beginPath();s.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.strokeStyle='rgba(44,26,14,0.85)';x.lineWidth=0.75;x.stroke();
-    x.save();x.translate(-0.5,0.6);x.strokeStyle='rgba(255,246,226,0.32)';x.lineWidth=0.45;x.stroke();x.restore();}
+  // 斑痕在磨损区内断续聚集。浅面只留像针尖的小点，局部显出粗糙的骨底。
+  const fleck=rng(30217);
+  for(let cluster=0;cluster<490;cluster++){
+    const cx=fleck()*300-150, cy=fleck()*392-196, u=(cx+150)/300,v=(cy+196)/392;
+    const damage=areas.reduce((sum,[sx,sy,rx,ry,amount])=>sum+amount*Math.exp(-Math.pow((cx-sx)/rx,2)-Math.pow((cy-sy)/ry,2)),0);
+    const affinity=damage*.70+cloudy(u*8,v*10)*.45+patch(u*23,v*28)*.52;
+    if(affinity<.75)continue;
+    const radius=2+fleck()*6, along=.40+fleck()*.64, slope=(fleck()-.5)*1.7, strength=smooth(.72,1.37,affinity);
+    const n=10+28*strength;
+    for(let j=0;j<n;j++){
+      const a=fleck()*Math.PI*2, spread=Math.sqrt(fleck())*radius, dx=Math.cos(a)*spread,dy=Math.sin(a)*spread*along;
+      const hx=cx+dx*Math.cos(slope)-dy*Math.sin(slope),hy=cy+dx*Math.sin(slope)+dy*Math.cos(slope);
+      const size=(.18+fleck()**3*.96)*(.7+strength*.62),tone=fleck();
+      const alpha=(.12+.53*strength)*(.55+.45*fleck());
+      x.fillStyle=tone<.25?'rgba(250,237,206,'+alpha+')':tone<.54?'rgba(113,86,52,'+alpha+')':'rgba(140,89,47,'+alpha+')';
+      x.beginPath();x.moveTo(hx-size,hy);x.lineTo(hx-size*.16,hy-size*.64);x.lineTo(hx+size*.82,hy-size*.24);
+      x.lineTo(hx+size*.44,hy+size*.36);x.lineTo(hx-size*.38,hy+size*.58);x.closePath();x.fill();
+    }
+  }
+  // 不齐的断面：薄的外层在转折处剥离，露出的内层留有细长的孔隙。
+  const edgeRng=rng(417), r=rng(215);
+  const ledge=BREAK_PTS.map(([px,py],j)=>{
+    const a=BREAK_PTS[Math.max(0,j-1)],b=BREAK_PTS[Math.min(j+1,BREAK_PTS.length-1)];
+    const length=Math.hypot(b[1]-a[1],b[0]-a[0])||1;
+    let nx=(b[1]-a[1])/length,ny=-(b[0]-a[0])/length;
+    if(nx*px+ny*py>0){nx=-nx;ny=-ny;}
+    const t=j/(BREAK_PTS.length-1);
+    const spread=.8+2.6*Math.pow(Math.sin(t*9+.5),2)+1.15*edgeRng();
+    return {px,py,nx,ny,spread};
+  });
+  for(let j=1;j<ledge.length;j++){
+    const a=ledge[j-1],b=ledge[j];
+    const step=(p,k)=>[p.px+k*p.nx*p.spread,p.py+k*p.ny*p.spread];
+    const lip=(k0,k1,color)=>{x.fillStyle=color;fillPoly(x,[step(a,k0),step(b,k0),step(b,k1),step(a,k1)]);};
+    lip(0,.78,'rgba(123,95,65,.48)');
+    lip(.2,1,'rgba(217,196,159,.76)');
+    if(j%7<4)lip(.83,1.14,'rgba(246,231,200,.64)');
+    const count=Math.ceil((a.spread+b.spread)*.42);
+    for(let k=0;k<count;k++){
+      const v=edgeRng(), depth=.24+edgeRng()*.58;
+      const pa=step(a,depth),pb=step(b,depth),cx=lerp(pa[0],pb[0],v),cy=lerp(pa[1],pb[1],v);
+      x.fillStyle='rgba(90,68,49,.53)';x.beginPath();
+      x.ellipse(cx,cy,.24+edgeRng()*.61,.14+edgeRng()*.17,Math.atan2(-a.nx,a.ny)+.5,0,2*Math.PI);x.fill();
+    }
+  }
+  // Shield sulci survive as smooth, shallow fragments. Interlocked bone margins meet at a different depth.
+  const boneJoin = (control, seed, breadth, density, knit = true) => {
+    const roll = rng(seed), samples = resample(control,1.05);
+    let surface = 0.15, bend = 0, grain = 0;
+    const pts = [], dark = [], lip = [];
+    for (let i = 0; i < samples.length; i++) {
+      const p=samples[i], a=samples[Math.max(0,i-1)], b=samples[Math.min(samples.length-1,i+1)];
+      const length=Math.hypot(b[0]-a[0],b[1]-a[1])||1, nx=(a[1]-b[1])/length, ny=(b[0]-a[0])/length;
+      if (i%13===0) grain=roll();
+      surface = .91*surface+.09*grain;
+      bend=.77*bend+(roll()-.5)*.37;
+      const tooth = knit ? (roll()-.5)*(.24+surface*.72) : (roll()-.5)*.12;
+      const v=Math.min(1,(i+1)/5,(samples.length-i)/5), w=breadth*(.24+1.45*surface*surface+Math.abs(tooth)*.46)*v;
+      const offset=bend+tooth;
+      pts.push([p[0]+nx*offset,p[1]+ny*offset]); dark.push(w); lip.push(w*(.15+.46*surface));
+    }
+    boneLineRim(x,pts,lip,'rgba(252,233,192,'+(density*.49)+')',.39,.53);
+    boneLineRim(x,pts,dark,'rgba(65,44,26,'+density+')');
+    if (!knit) return;
+    // Fragments of darker sediment lodge along one margin, with unequal gaps.
+    for(let i=3;i<pts.length-2;i+=3+Math.floor(roll()*5)){
+      if(dark[i]<.53 || roll()<.32)continue;
+      const a=pts[i], b=pts[i+1], scale=dark[i]*(.3+roll()*.7);
+      x.fillStyle='rgba(74,46,25,'+(.22+roll()*.27)+')';
+      fillPoly(x,[[a[0]-.22,a[1]],[b[0]+.32,b[1]],[a[0]-scale*.47,a[1]+scale]]);
+    }
+  };
+  // Median suture stops at the entoplastron and resumes below its posterior point.
+  boneJoin([[0,-173],[-.4,-162],[.7,-153],[.1,-145]],251,1.03,.72);
+  boneJoin([[-105,-158],[-88,-151],[-69,-145],[-53,-132],[-37,-127]],252,1.25,.74);
+  boneJoin([[-37,-127],[-26,-130],[-15,-139],[.1,-145],[14,-139],[26,-130],[36,-126]],253,1.08,.72);
+  boneJoin([[36,-126],[53,-132],[67,-141],[84,-149],[104,-154]],254,1.19,.76);
+  boneJoin([[-37,-127],[-34,-115],[-27,-104],[-18,-96],[-6,-90],[.5,-87],[14,-92],[24,-101],[30,-112],[36,-126]],255,1.38,.80);
+  boneJoin([[.5,-87],[1.1,-77],[.1,-64],[.5,-52],[-.4,-34],[.7,-17]],256,1.04,.74);
+  boneJoin([[.7,-17],[1.4,-10],[.1,5],[1.4,30],[.6,51],[1.8,75],[1.2,93]],257,1.24,.76);
+  boneJoin([[1.2,93],[.4,103],[1.6,119],[1.4,137],[0,155]],258,1.35,.79);
+  boneJoin([[-150,7],[-135,3],[-118,-3],[-99,-6],[-86,-7],[-71,-7],[-51,-8],[-35,-8],[-23,-12],[-5,-17],[.7,-17],[2,-14],[19,-15],[39,-11],[59,-8],[69,-6],[88,-5],[106,0],[117,2.8],[124,3.1],[133,5],[150,8]],259,1.53,.81);
+  boneJoin([[-119,110],[-102,108],[-87,105],[-74,104],[-61,100],[-43,100],[-30,96],[-12,96],[1.2,93],[3,95],[24,97],[40,100],[59,100],[76,102],[90,105],[114,108]],260,1.22,.77);
+  // Faint score remnants end independently; avoid subdividing every surface into cells.
+  boneJoin([[-120,-75],[-103,-71],[-91,-68],[-79,-68],[-66,-65]],261,.58,.44,false);
+  boneJoin([[58,-69],[71,-67],[85,-71],[100,-78],[115,-83]],262,.56,.40,false);
+  boneJoin([[-112,67],[-100,63],[-89,63],[-80,61]],263,.55,.38,false);
+  boneJoin([[67,61],[76,61],[88,64],[102,67],[120,68]],264,.55,.41,false);
+
+  // Four older divinations: the face keeps a hairline and, at most, a small local ochre change.
+  for(let k=0;k<CRK_OLD.length;k+=2){
+    const stem=CRK_OLD[k], twig=CRK_OLD[k+1], origin=twig[0];
+    const a=rng(277+k);
+    for (let j=0;j<4;j++){
+      const ox=origin[0]+(twig[twig.length-1][0]-origin[0])*.18+(r()-.5)*3;
+      const oy=origin[1]+(r()-.5)*4, rad=3+r()*5;
+      const tint=x.createRadialGradient(ox,oy,0,ox,oy,rad);
+      tint.addColorStop(0,'rgba(119,76,31,.075)');tint.addColorStop(1,'rgba(119,76,31,0)');
+      x.fillStyle=tint;x.fillRect(ox-rad,oy-rad,rad*2,rad*2);
+    }
+    for(const points of [stem,twig]){
+      const P=resample(points,1.6);
+      const widths=P.map((q,i)=>{
+        const v=i/(P.length-1), near=Math.exp(-Math.hypot(q[0]-origin[0],q[1]-origin[1])/14);
+        return (.20+.38*near+.38*Math.sin(Math.PI*v))*(.73+a()*.44)*Math.min(1,.08+v*15,.08+(1-v)*13);
+      });
+      boneLineRim(x,P,widths.map(w=>w*.40),'rgba(242,218,173,.38)',.29,.35);
+      boneLineRim(x,P,widths,'rgba(62,41,24,.84)');
+    }
+  }
   // 刻辞
-  INSCR.forEach(([ch,cx0,cy0,sz],k)=>drawOBI(x,ch,cx0,cy0,sz,sz*0.056,0.45+r()*0.5,1,40+k));
+  const hand = [[.94,-.059,-.03],[1.04,-.047,.045],[.91,.052,-.052],
+      [.92,.065,-.078],[1.03,-.053,-.053],[.89,.061,.022],
+      [1,.031,-.027],[.92,-.035,.052],[1.05,.028,.017],[.91,-.035,.025],
+      [.96,.074,-.041],[.93,.031,.064],[.87,.043,.012]];
+    INSCR.forEach(([ch,cx0,cy0,sz],k)=>{
+      const [stretch,slope,lean]=hand[k];
+      x.save();x.transform(stretch,slope,lean,1,cx0,cy0);
+      drawOBI(x,ch,0,0,sz,sz*.056,.45+r()*.5,1,40+k);
+      x.restore();
+    });
   x.restore();
   // 体积：中间亮、边缘暗；右上一抹柔光，像被手摸得发亮的包浆
   x.save();plPath(x);x.clip();
-  let g=x.createRadialGradient(20,-30,40,0,0,215);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(1,'rgba(110,86,60,0.42)');x.globalCompositeOperation='multiply';x.fillStyle=g;x.fillRect(-160,-200,320,400);
-  x.globalCompositeOperation='screen';g=x.createRadialGradient(64,-96,6,64,-96,130);g.addColorStop(0,'rgba(255,248,230,0.3)');g.addColorStop(1,'rgba(255,248,230,0)');x.fillStyle=g;x.fillRect(-160,-200,320,400);
+  let g=x.createRadialGradient(20,-30,40,0,0,215);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(1,'rgba(103,84,65,0.20)');x.globalCompositeOperation='multiply';x.fillStyle=g;x.fillRect(-160,-200,320,400);
+  x.globalCompositeOperation='screen';g=x.createRadialGradient(64,-96,6,64,-96,130);g.addColorStop(0,'rgba(255,248,230,0.12)');g.addColorStop(1,'rgba(255,248,230,0)');x.fillStyle=g;x.fillRect(-160,-200,320,400);
   g=x.createRadialGradient(-50,90,4,-50,90,70);g.addColorStop(0,'rgba(255,246,226,0.1)');g.addColorStop(1,'rgba(255,246,226,0)');x.fillStyle=g;x.fillRect(-160,-200,320,400);
   x.restore();
   // 甲的厚度：边缘一圈暗，左上受光的一侧亮一线
-  x.save();x.globalCompositeOperation='source-atop';x.lineWidth=2.4;plPath(x);x.strokeStyle='rgba(70,48,28,0.5)';x.stroke();plPath(x,-0.9,0.9);x.lineWidth=1.0;x.strokeStyle='rgba(255,246,222,0.32)';x.stroke();x.restore();
+  x.save();x.globalCompositeOperation='source-atop';x.lineWidth=2.4;plPath(x);x.strokeStyle='rgba(70,48,28,0.28)';x.stroke();plPath(x,-0.9,0.9);x.lineWidth=1.0;x.strokeStyle='rgba(255,246,222,0.32)';x.stroke();x.restore();
   PL2=c;}
 const PLSMALL=mk(4,4);
 function drawS2Panel(t,cam,TR){const x0=S2X-S2W/2,y0=S2Y-S2W/2;panelShadow(x0,y0,S2W,S2W);
@@ -130,12 +346,35 @@ function drawS2Panel(t,cam,TR){const x0=S2X-S2W/2,y0=S2Y-S2W/2;panelShadow(x0,y0
   ctx.drawImage(PL2,S2X-PLW/2/MS2,S2Y-5-PLH/2/MS2,PLW/MS2,PLH/MS2);
   // 灼：背面钻凿里加热，正面慢慢焦黄、透出一点火光
   ctx.save();ctx.translate(S2X,S2Y-5);
-  const sc=smooth(29.45,30.25,t);if(sc>0){const o=[40,12];let g=ctx.createRadialGradient(o[0],o[1],0,o[0],o[1],20*sc+2);g.addColorStop(0,`rgba(80,42,16,${0.7*sc})`);g.addColorStop(1,'rgba(92,52,22,0)');ctx.fillStyle=g;ctx.fillRect(o[0]-20,o[1]-20,40,40);
-    const glow=smooth(29.6,30.2,t)*(1-smooth(30.35,31.4,t))*(0.82+0.18*Math.sin(t*31));if(glow>0){ctx.globalCompositeOperation='lighter';g=ctx.createRadialGradient(o[0],o[1],0,o[0],o[1],30);g.addColorStop(0,`rgba(255,150,60,${0.8*glow})`);g.addColorStop(1,'rgba(255,90,20,0)');ctx.fillStyle=g;ctx.fillRect(o[0]-24,o[1]-24,48,48);ctx.globalCompositeOperation='source-over';}}
+  const sc=smooth(29.45,30.25,t);if(sc>0){const o=[40,12];let g=ctx.createRadialGradient(o[0],o[1],0,o[0],o[1],20*sc+2);g.addColorStop(0,`rgba(80,42,16,${0.7*sc})`);g.addColorStop(1,'rgba(92,52,22,0)');ctx.fillStyle=g;ctx.fillRect(o[0]-23,o[1]-23,46,46);
+    const glow=smooth(29.6,30.2,t)*(1-smooth(30.35,31.56,TREAL))*(0.82+0.18*Math.sin(TREAL*31));if(glow>0){ctx.globalCompositeOperation='lighter';g=ctx.createRadialGradient(o[0],o[1],0,o[0],o[1],30);g.addColorStop(0,`rgba(255,150,60,${0.8*glow})`);g.addColorStop(1,'rgba(255,90,20,0)');ctx.fillStyle=g;ctx.fillRect(o[0]-32,o[1]-32,64,64);ctx.globalCompositeOperation='source-over';}}
   // 兆：先纵裂，再横出一枝，指向左边
-  const hot=1-smooth(T2C+0.05,T2C+0.9,t);const crack=(pts,p)=>{if(p<=0)return null;const n=Math.max(2,Math.ceil(pts.length*p));const sub=pts.slice(0,n);ctx.beginPath();sub.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.lineJoin='round';ctx.strokeStyle='rgba(34,20,10,0.95)';ctx.lineWidth=1.9;ctx.stroke();
-    if(hot>0){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle=`rgba(255,150,60,${0.9*hot})`;ctx.lineWidth=0.8;ctx.stroke();ctx.restore();}
-    ctx.save();ctx.translate(-0.7,0.8);ctx.strokeStyle='rgba(255,246,226,0.45)';ctx.lineWidth=0.6;ctx.stroke();ctx.restore();return sub[sub.length-1];};
+  const hot=1-smooth(T2C+0.05,T2C+1.14,TREAL);const crack=(pts,p)=>{
+    if(p<=0)return null;
+    const branch=pts===CRK_NEW_BR;
+    const tipIndex=p*(pts.length-1), last=Math.floor(tipIndex);
+    const sub=pts.slice(0,last+1);
+    if(last<pts.length-1){
+      const a=pts[last],b=pts[last+1], frac=tipIndex-last;
+      sub.push([lerp(a[0],b[0],frac),lerp(a[1],b[1],frac)]);
+    }
+    if(sub.length<2)return sub[0];
+    // Width follows the original fracture, not the length already revealed.
+    const widths=sub.map((q,i)=>{
+      const v=Math.min(i,tipIndex)/(pts.length-1);
+      const edge=Math.min(1,.13+(1-v)*7,.14+(tipIndex-Math.min(i,tipIndex))*1.6);
+      const rough=.90+.13*Math.sin(3.81*Math.min(i,tipIndex)+(.2+v)*2.33);
+      return (branch?1.66:1.52)*(.82+.18*(1-v))*edge*rough;
+    });
+    boneLineRim(ctx,sub,widths.map(w=>w*.32),'rgba(250,229,187,.52)',.42,.46);
+    boneLineRim(ctx,sub,widths,'rgba(39,24,14,.96)');
+    if(hot>0){
+      ctx.save();ctx.globalCompositeOperation='lighter';
+      boneLineRim(ctx,sub,widths.map(w=>w*.46),'rgba(255,150,60,'+(.9*hot)+')');
+      ctx.restore();
+    }
+    return sub[sub.length-1];
+  };
   const ps=smooth(T2C,T2C+0.12,t),pb=smooth(T2C+0.16,T2C+0.3,t);
   {const f=1-smooth(T2C,T2C+0.25,t);if(f>0&&t>=T2C){ctx.save();ctx.globalCompositeOperation='lighter';const g3=ctx.createRadialGradient(40,12,0,40,12,26);g3.addColorStop(0,`rgba(255,240,210,${0.9*f})`);g3.addColorStop(1,'rgba(255,200,120,0)');ctx.fillStyle=g3;ctx.fillRect(14,-14,52,52);ctx.restore();}}const tips=[crack(CRK_NEW_STEM,ps),crack(CRK_NEW_STEM2,ps),crack(CRK_NEW_BR,pb)];
   const r=rng(Math.floor(TREAL*30));for(const [tp,t0] of [[tips[0],T2C],[tips[1],T2C],[tips[2],T2C+0.17]]){if(!tp)continue;const d=t-t0;if(d>0.45)continue;for(let i=0;i<5;i++){ctx.fillStyle=`rgba(250,240,215,${0.8*(1-d/0.45)})`;ctx.beginPath();ctx.arc(tp[0]+(r()-.5)*10*(0.3+d*3),tp[1]+(r()-.5)*10*(0.3+d*3)-d*8,0.5+r()*0.8,0,7);ctx.fill();}}

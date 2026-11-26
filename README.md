@@ -6,7 +6,7 @@
 
 **A fish swims out of a six-thousand-year-old painted pottery basin and through eleven works of Chinese art.<br>Whatever it touches, it becomes.**
 
-[▶ Watch online](https://fish6000.vercel.app) · [⬇ Download the 1080p 30 fps film](../../releases/latest) · [Changelog](CHANGELOG.md) · [中文](README.zh-CN.md)
+[▶ Watch online](https://fish6000.vercel.app) · [⬇ Download the 1080p 40 fps film](../../releases/latest) · [Changelog](CHANGELOG.md) · [中文](README.zh-CN.md)
 
 </div>
 
@@ -43,15 +43,15 @@ The artworks are redrawn in code after real relics and styles. They are not repr
 
 **Just watch:** open `film.html` in Chrome or Edge. Space plays, `[` `]` jump between stations, `,` `.` step one frame, `S` saves the current frame.
 
-**Render to video:** requires Node.js 20+, ffmpeg and Chrome.
+**Render to video:** requires Node.js 20+, ffmpeg and Chrome or Edge. The film runs at 40 fps.
 
 ```bash
 npm install
-node render.js video film_silent.mp4 --jobs 4
-node render.js mux film_silent.mp4 score_full.wav film.mp4
+node render.js video film_silent.mp4 --fps 40 --crf 18 --preset veryfast --jobs 4
+ffmpeg -i film_silent.mp4 -i score_film.m4a -map 0:v:0 -map 1:a:0 -c copy -movflags +faststart film.mp4
 ```
 
-For 4K at 60 fps, add `--fps 60 --scale 2 --crf 20 --preset medium` to the second line. Every canvas is redrawn at twice the pixel density; nothing is upscaled.
+For 4K, run `python3 tools/export-4k.py --jobs 4` (Python 3 required). It writes `film-4k.mp4` at 3840 × 2160 with sound. Every canvas is redrawn at twice the pixel density; nothing is upscaled.
 
 **After editing the source:** run `python build.py` to assemble `film/` into `film.html`.
 

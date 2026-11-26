@@ -5,7 +5,7 @@
 const S11X=-6700,S11Y=0,S11W=600;
 const T11IN=137.4,T11CAP=[138.6,142.5],T11CAP2=[146.3,150.9];
 const TK=[144.30,145.08,145.82,146.52,147.18,147.80,148.38,148.93,149.45,149.95];   // 十行 drawXxx 各自打完的时刻：鱼在这一刻换画法
-const TSKIN=[...TK,TK[9]+0.3],TSKIN_END=TK[9]+0.8,WIPE11=0.2;                        // 像素那一行连着两种（1980 的马赛克 → 2026）；最后换回骨架
+const TSKIN=[...TK,TK[9]+0.46],TSKIN_END=TK[9]+0.8,WIPE11=0.2;                        // 像素那一行连着两种（1980 的马赛克 → 2026）；最后换回骨架
 const T11LOOP=150.95,T11RUN=151.95,T11BACK=[152.5,157.0],T_FIN=164.0;                // 打最后一行；它跑起来；镜头拉远；全片转黑
 const T11HUDCUT=153.9;                                                                   // 读数收掉的时刻：这时鱼正在画面外（左边）
 const CODE=[
@@ -23,7 +23,7 @@ const CODE=[
  ['k','  return ','p','{ spine, L, t };'],
  ['p','}'],
  ['p',''],
- ['c','// 同一根脊线，换一种画法，就换了一个朝代'],
+ ['c','// 同一根脊线，换十种画法'],
  ['f','drawBanpo','p','(pose);','p','     ','c','// 仰韶 · 彩陶'],
  ['f','drawOracle','p','(pose);','p','    ','c','// 商 · 甲骨'],
  ['f','drawRubbing','p','(pose);','p','   ','c','// 汉 · 画像石'],
@@ -35,7 +35,7 @@ const CODE=[
  ['f','drawPapercut','p','(pose);','p','  ','c','// 民间 · 剪纸'],
  ['f','drawPixels','p','(pose);','p','    ','c','// 1980—2026'],
  ['p',''],
- ['k','for ','p','(let t = ','n','0','p','; t < ','n',String(Math.round(T_FIN+4)),'p','; t += ','n','1','p','/','n','30','p',') ','f','render','p','(t);']];
+ ['k','for ','p','(let f = ','n','0','p','; f < ','n','6934','p','; f++) ','f','render','p','(f / ','n','40','p',');']];
 const CCOL={c:'#6a7a70',k:'#c792ea',f:'#82aaff',p:'#c9d1d9',n:'#f78c6c'};
 const CFONT='500 10.5px "DejaVu Sans Mono","Noto Serif CJK SC"',CLH=17.5,CDRAW0=15,CLOOP=26,CSCROLL0=14;
 const codeLen=line=>{let n=0;for(let j=1;j<line.length;j+=2)n+=[...line[j]].length;return n;};
@@ -55,13 +55,20 @@ function drawS11Panel(t,cam,TR){const x0=S11X-S11W/2,y0=S11Y-S11W/2;panelShadow(
   let cur=-1;for(let i=0;i<CODE.length;i++)if(t>=CPLAN[i].t)cur=i;
   const scroll=cur>CSCROLL0?CLH*((cur-CSCROLL0-1)+smooth(CPLAN[cur].t,CPLAN[cur].t+0.14,t)):0;
   const X0=x0+44,Y0=y0+65-scroll;ctx.font=CFONT;ctx.textBaseline='top';
+  // Only the completed invocation is the active one. Typing the next line
+  // should not cause the reader's gaze to jump ahead of the drawing.
+  let runningLine=-1;
+  if(t>=T11RUN)runningLine=CLOOP;
+  else if(t<TSKIN_END+0.1)for(let i=0;i<TK.length;i++)if(t>=TK[i])runningLine=CDRAW0+i;
   // 刚执行的那一行：一条淡淡的底色，左边一道竖线
   {let hk=-1;for(let i=0;i<TK.length;i++)if(t>=TK[i])hk=i;let li=-1,tt=0,col='130,170,255';if(t>=T11RUN){li=CLOOP;tt=T11RUN;col='127,219,202';}else if(hk>=0&&t<TSKIN_END+0.1){li=CDRAW0+hk;tt=TK[hk];}
-    if(li>=0){const y=Y0+li*CLH,f=Math.exp(-(t-tt)*8);ctx.fillStyle=`rgba(${col},${(0.085+0.22*f).toFixed(3)})`;ctx.fillRect(x0+8,y-3.5,S11W*0.6,CLH);ctx.fillStyle=`rgba(${col},${(0.75+0.25*f).toFixed(3)})`;ctx.fillRect(x0+8,y-3.5,2.2,CLH);}}
+    if(li>=0){const y=Y0+li*CLH,f=Math.exp(-(t-tt)*8);ctx.fillStyle=`rgba(${col},${(0.085+0.22*f).toFixed(3)})`;ctx.fillRect(x0+8,y-3.5,Math.min(S11W*.67,53+ctx.measureText(CODE[li].filter((_,j)=>j%2).join('')).width),CLH);ctx.fillStyle=`rgba(${col},${(0.75+0.25*f).toFixed(3)})`;ctx.fillRect(x0+8,y-3.5,2.2,CLH);}}
   let cx=X0,cy=Y0;
   CODE.forEach((line,li)=>{const sh=codeShown(li,t);if(sh<0)return;const y=Y0+li*CLH;if(y<y0-CLH)return;let x=X0,left=sh;
     ctx.fillStyle='rgba(120,130,140,0.45)';ctx.fillText(String(li+1).padStart(2,' '),x0+16,y);
-    for(let j=0;j<line.length&&left>0;j+=2){const ch=[...line[j+1]];const shown=ch.slice(0,left).join('');left-=ch.length;ctx.fillStyle=CCOL[line[j]];ctx.fillText(shown,x,y);x+=ctx.measureText(shown).width;}
+    for(let j=0;j<line.length&&left>0;j+=2){const ch=[...line[j+1]];const shown=ch.slice(0,left).join('');left-=ch.length;ctx.save();
+      if(runningLine>=0&&li!==runningLine)ctx.globalAlpha*=0.74;
+      ctx.fillStyle=CCOL[line[j]];ctx.fillText(shown,x,y);ctx.restore();x+=ctx.measureText(shown).width;}
     if(li===cur){cx=x;cy=y;}});
   // 光标：正在打字时常亮，停下来就一闪一闪
   if(cur>=0){const q=CPLAN[cur],typing=(t-q.t)*q.cps<q.main+2;if(typing||Math.floor(t*2.5)%2===0){ctx.fillStyle='#c9d1d9';ctx.fillRect(cx+1,cy-0.5,6,12);}}
@@ -130,10 +137,36 @@ function style11(t,cam,TR,p,clip){if(t<TSKIN[0]||t>=TSKIN_END+WIPE11){styleCode(
 const TITLE_A='一条鱼',TITLE_C='游过六千年';
 function tinyFish(c,p,col){const pr=PROF.song,L=p.L;const e=edges(p,pr);c.fillStyle=col;bodyFill(c,e);c.fill();
   const tp=spineAt(p,1),bt=bodyAt(p,pr,0.8,1),bb=bodyAt(p,pr,0.8,-1);c.beginPath();c.moveTo(bt[0],bt[1]);c.lineTo(tp.x+tp.nx*L*0.2,tp.y+tp.ny*L*0.2);c.lineTo(tp.x+(tp.x-spineAt(p,0.92).x)*0.2,tp.y+(tp.y-spineAt(p,0.92).y)*0.2);c.lineTo(tp.x-tp.nx*L*0.19,tp.y-tp.ny*L*0.19);c.lineTo(bb[0],bb[1]);c.closePath();c.fill();}
-function commaFish(c,p,k,col){const L=p.L,M=40,top=[],bot=[];
+function commaOutlines(){
+  const head=[147,133],tip=[78,-211];
+  const halves=[
+    [[head,[197,133],[232,93],[232,30]],[[232,30],[232,-54],[193,-159],tip]],
+    [[head,[100,133],[71,98],[71,60]],[[71,60],[71,0],[131,-21],[174,-36]],[[174,-36],[168,-81],[141,-141],[62,-183]],[[62,-183],[66,-190],[73,-202],tip]]
+  ];
+  return halves.map(curves=>{
+    const pts=[head],len=[0];
+    for(const [a,b,c,d] of curves)for(let j=1;j<=24;j++){
+      const t=j/24,r=1-t,q=a.map((x,i)=>r*r*r*x+3*r*r*t*b[i]+3*r*t*t*c[i]+t*t*t*d[i]);
+      const last=pts[pts.length-1];len.push(len[len.length-1]+Math.hypot(q[0]-last[0],q[1]-last[1]));pts.push(q);
+    }
+    return Array.from({length:41},(_,i)=>{
+      const dist=len[len.length-1]*i/40;let j=1;while(j<len.length-1&&len[j]<dist)j++;
+      const u=(dist-len[j-1])/(len[j]-len[j-1]);return pts[j].map((v,k)=>lerp(pts[j-1][k],v,u));
+    });
+  });
+}
+const COMMA_OUTLINES=commaOutlines();
+function commaFish(c,p,k,col,glyph){const L=p.L,M=40,top=[],bot=[];
   const wC=u=>u<0.22?0.24*Math.sqrt(Math.max(0,1-Math.pow((0.22-u)/0.22,2))):0.24*Math.pow(Math.max(0,1-(u-0.22)/0.78),1.4);
   const wF=u=>u<=0.8?0.5*(PROF.song.d(u,L)+PROF.song.b(u,L))/L:lerp(0.024,0.016,(u-0.8)/0.2);
   for(let i=0;i<=M;i++){const u=i/M,s=spineAt(p,u),w=lerp(wC(u),wF(u),k)*L;top.push([s.x+s.nx*w,s.y+s.ny*w]);bot.push([s.x-s.nx*w,s.y-s.ny*w]);}
+  if(k<1)for(let side=0;side<2;side++){
+    const hull=side?bot:top,g=COMMA_OUTLINES[side];
+    for(let i=0;i<=M;i++){
+      const from=[glyph[0]+.054*g[i][0],glyph[1]-.054*g[i][1]];
+      hull[i]=[lerp(from[0],hull[i][0],k),lerp(from[1],hull[i][1],k)];
+    }
+  }
   c.fillStyle=col;c.beginPath();top.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));for(let i=M;i>=0;i--)c.lineTo(bot[i][0],bot[i][1]);c.closePath();c.fill();
   if(k>0.02){const tp=spineAt(p,1),pre=spineAt(p,0.9),f=k*L;c.beginPath();c.moveTo(top[32][0],top[32][1]);c.lineTo(tp.x+tp.nx*f*0.2,tp.y+tp.ny*f*0.2);c.lineTo(tp.x+(tp.x-pre.x)*0.5*k,tp.y+(tp.y-pre.y)*0.5*k);c.lineTo(tp.x-tp.nx*f*0.19,tp.y-tp.ny*f*0.19);c.lineTo(bot[32][0],bot[32][1]);c.closePath();c.fill();}}
 function drawFinale(t){const a=smooth(T_FIN-1.1,T_FIN,t);if(a<=0)return;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle=`rgba(8,8,9,${Math.min(1,a*1.2)})`;ctx.fillRect(0,0,W,H);
@@ -143,9 +176,9 @@ function drawFinale(t){const a=smooth(T_FIN-1.1,T_FIN,t);if(a<=0)return;ctx.save
   ctx.fillText(TITLE_A,x0,base);ctx.fillText(TITLE_C,x0+wA+wB,base);
   // 逗号：先是一个逗号。它其实就是一条蜷着的小鱼——圆头、细尾巴弯下去；
   // 先换成同样形状的"逗号鱼"（看不出换了），尾巴一抖醒过来，身子舒展开、头转向左边，然后越游越快，游出画面
-  const tc=T_FIN+1.55,dot=[x0+wA+8,base-4],d=t-tc;   // 逗号醒过来：片名和印亮足以后先停一秒，让人把字读完
+  const tc=T_FIN+1.55,dot=[x0+wA+7.94,base-7.18],d=t-tc;   // 逗号醒过来：片名和印亮足以后先停一秒，让人把字读完
   const L0=17,ang0=-Math.PI/2,cv0=-0.12;const P00=procPose(0,0,ang0,L0,cv0,0,0,t).sp[0];const C0=[dot[0]-P00.x,dot[1]-P00.y];
-  const cf=smooth(-0.12,0,d);
+  const cf=smooth(0,0.07,d);
   if(cf<1){ctx.save();ctx.globalAlpha=b*(1-cf);ctx.fillText('，',x0+wA,base);ctx.restore();}
   if(cf>0){
     // 醒过来时一圈细细的涟漪
@@ -161,12 +194,12 @@ function drawFinale(t){const a=smooth(T_FIN-1.1,T_FIN,t);if(a<=0)return;ctx.save
     const amp=d<=0?0:(0.9*smooth(0,0.1,d)*(1-0.4*smooth(0.15,0.35,d))+0.7*smooth(0.3,0.6,d));
     const ph=2*Math.PI*(2.2*Math.max(0,d)+1.8*Math.max(0,d-0.35));
     const p=procPose(h[0],h[1],ang,L,cv,amp,ph,t);
-    ctx.save();ctx.globalAlpha=b*cf;commaFish(ctx,p,k,'#e8e0d2');ctx.restore();}
+    ctx.save();ctx.globalAlpha=b*cf;if(cf<1)ctx.globalCompositeOperation='lighter';commaFish(ctx,p,k,'#e8e0d2',[x0+wA,base]);ctx.restore();}
   ctx.letterSpacing='0px';stampSeal(ctx,SEAL_TITLE,x0+wA+wB+wC+38,base-20,52,0.88*b,0.01,'source-over');ctx.restore();}   // 印和片名一起从黑里浮出来（不再晚半拍另盖）
 // 3) 大鱼拼成以后：片名出现在墙上，鱼尾上方的空处，底下一小盏灯（和开头的片名呼应）
 const ET=[-3050+1736,30-1545],   // 大鱼中心 FC=[-3050,30]
       ET_X0=0,ET_F=118,ET_DY=148,ET_DX=196;
-function drawEndTitle(t){const t0=TG1+0.4;if(t<t0)return;let k=0;
+function drawEndTitle(t){const t0=TG1+0.95;if(t<t0)return;let k=0;
   ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=`600 ${ET_F}px ${SERIF}`;
   [TITLE_A,TITLE_C].forEach((col,ci)=>{const x=ET[0]-ci*ET_DX,y0=ET[1]+ci*128;[...col].forEach((ch,i)=>{const a=smooth(t0+k*0.16,t0+k*0.16+0.6,t);k++;if(a<=0)return;
     ctx.save();ctx.globalAlpha=a;ctx.filter=a<1?`blur(${((1-a)*2.5).toFixed(2)}px)`:'none';ctx.fillStyle='#2b241d';ctx.fillText(ch,x,y0+i*ET_DY);ctx.restore();});});
@@ -177,29 +210,88 @@ function drawEndTitle(t){const t0=TG1+0.4;if(t<t0)return;let k=0;
   if(d>0){const sc=1+0.025*Math.exp(-d*14);stampSeal(ctx,SEAL_TITLE,sx,sy,150*sc,0.9*(1-Math.pow(1-smooth(0,0.28,d),2)),0.012);}}
 // ---------------- 拾壹 的登记 ----------------
 STN.push({key:'endtitle',cx:ET[0]-100,hw:500,draw:t=>drawEndTitle(t)});
-STN.push({key:'s11',cx:S11X,hw:S11W/2,x0:-1e9,x1:-6320,draw:drawS11Panel,style:style11,owns:t=>t>=T11BACK[0]+0.6,drawHero:(t,cam,TR,p)=>{if(t<TG0+0.5)styleCode(t,cam,TR,p,null);},postLight:(t,cam,TR)=>{if(t>=TG0+0.5){ctx.setTransform(...TR);styleCode(t,cam,TR,heroPoseNow(t),null);}}});
+STN.push({key:'s11',cx:S11X,hw:S11W/2,x0:-1e9,x1:-6320,draw:drawS11Panel,style:style11,owns:t=>t>=T11BACK[0]+0.6,drawHero:(t,cam,TR,p)=>{if(t<TG0+0.5)styleCode(t,cam,TR,p,null);},postLight:(t,cam,TR)=>{if(t>=TG0+0.5){ctx.setTransform(...TR);const p=heroPoseNow(t);
+    const arrival=smooth(TG1-.39,TG1-.04,t)*(1-smooth(TG1+.16,TG1+.80,t));
+    if(arrival>.001){
+      const s=spineAt(p,.40);
+      const glow=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,88);
+      glow.addColorStop(0,'rgba(255,229,164,'+(arrival*.34)+')');
+      glow.addColorStop(.50,'rgba(249,219,138,'+(arrival*.13)+')');
+      glow.addColorStop(1,'rgba(245,213,123,0)');
+      ctx.fillStyle=glow;ctx.fillRect(s.x-88,s.y-88,176,176);
+    }
+    styleCode(t,cam,TR,p,null);}}});
 LABELS.push([S11X,S11W,S11W,'拾壹','这一站','代码']);
 LIGHTS.push({x:S11X,y:-10,r:800,k:t=>smooth(136.4,138.2,t)});
 WASH={k:t=>0,spot:t=>1-smooth(TG0,TG0+2.0,t),y0:-10,h0:470,h1:1050,x0:-7050,x1:1000,fx:650};
 // ---------------- 片尾：十一件作品挪到一起，拼成一条大鱼；灯光打出鱼形，主角游进它的眼睛 ----------------
 const TG0=T11BACK[0]+0.5,TG1=TG0+4.0;
 const FC=[-3050,30];
-const FISH_SLOTS={s11:[-2050,70],s10:[-1340,-390],s9:[-1340,390],s8:[-600,-780],s7:[-600,-130],s6:[-600,590],s5:[160,-600],s4:[160,-60],s3:[160,460],s2:[850,-10],s1:[1640,0]};
+const FISH_SLOTS={"s11":[-2030,100,0.68],"s10":[-1245,-370,1.03],"s9":[-1245,316,1.1],"s8":[-460,-829,1.15],"s7":[-460,-131,0.86],"s6":[-460,573,0.86],"s5":[297,-403,1.114],"s4":[325,250,1.12],"s3":[1110,0,0.9],"s2":[1982,-283,1.093],"s1":[1990,289,0.7565]};
 const CX0={s1:S1X,s2:S2X,s3:S3X,s4:S4X,s5:S5X,s6:S6X,s7:S7X,s8:S8X,s9:S9X,s10:S10X,s11:S11X};
 const GORDER=['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11'];
 const EYE_REL=[-2020,-520],EYE_R=150;
 // 大鱼也在游：一道波从头传到尾，越往后摆得越大
 function bigWave(xr,t){const env=smooth(TG1-0.7,TG1+0.9,t);if(env<=0)return 0;const A=14+60*Math.pow(clamp((xr+700)/3400),1.5);return env*A*Math.sin(2*Math.PI*0.42*t-2*Math.PI*xr/5200);}
-function panelOff(key,t){const tgt=FISH_SLOTS[key];if(!tgt||t<TG0)return[0,0];const k=GORDER.indexOf(key);const t0=TG0+k*0.17,d=2.3;const u=smooth(t0,t0+d,t);
-  const dx=FC[0]+tgt[0]-CX0[key],dy=FC[1]+tgt[1];const side=Math.sin(Math.PI*u)*(k%2?1:-1)*80;return[dx*u,dy*u+side+bigWave(tgt[0],t)];}
-FISHL={k:t=>0.78*smooth(TG0+0.4,TG1-0.4,t),path:(c,t)=>{const P=(x,y)=>[FC[0]+x,FC[1]+y+bigWave(x,t)];const C=(a,b,d,e,f,g)=>{const A=P(a,b),B=P(d,e),D=P(f,g);c.bezierCurveTo(A[0],A[1],B[0],B[1],D[0],D[1]);};
-    c.beginPath();c.moveTo(...P(-2620,60));C(-2580,-360,-2300,-760,-1900,-850);C(-1500,-940,-1100,-1180,-600,-1200);C(-100,-1220,300,-1050,600,-700);C(800,-470,1000,-360,1200,-360);
-    C(1500,-380,2100,-900,2780,-1260);C(2600,-760,2380,-300,2330,0);C(2380,300,2600,760,2780,1260);C(2100,900,1500,380,1200,360);
-    C(1000,360,800,470,600,700);C(300,1050,-100,1160,-600,1120);C(-1100,1080,-1500,880,-1900,760);C(-2300,640,-2580,420,-2620,60);c.closePath();c.fill();
-    c.beginPath();c.moveTo(...P(-1400,-1060));C(-1100,-1350,-800,-1520,-500,-1560);C(-300,-1400,-100,-1250,100,-1130);c.closePath();c.fill();
-    c.beginPath();c.moveTo(...P(-320,1090));C(-150,1300,50,1430,250,1460);C(200,1300,150,1150,150,1040);c.closePath();c.fill();},
+
+// A gallery mount remains visible all the way to its slot. Staggered starts
+// allow the camera to follow the wall before the complete dark fish settles.
+function mosaicPlacement(key,t){
+  const slot=FISH_SLOTS[key];
+  if(!slot||t<TG0)return null;
+  const k=GORDER.indexOf(key),[x,y,scale]=slot;
+  const launch=TG0+k*.105, arrive=launch+1.90;
+  const u=smooth(launch,arrive,t);
+  const lift=Math.sin(Math.PI*u)*(k%2?1:-1)*65;
+  return {x:(FC[0]+x-CX0[key])*u,y:(FC[1]+y)*smooth(launch,launch+1.30,t)+lift+u*bigWave(x,t),
+    scale:lerp(1,scale,u),alpha:1,inside:t>=arrive};
+}
+function panelOff(key,t){
+  const p=mosaicPlacement(key,t);
+  return p?[p.x,p.y]:[0,0];
+}
+function drawMosaicPanel(s,t,cam,p){
+  const zoom=cam.z*p.scale;
+  const cs={...cam,z:zoom,x:s.cx-(s.cx+p.x-cam.x)/p.scale,y:(cam.y-p.y)/p.scale};
+  const tr=[zoom,0,0,zoom,W/2-cs.x*zoom,H/2-cs.y*zoom];
+  mosaicShadowScale=lerp(1,Math.min(1,zoom),smooth(TG0,TG0+.8,t));
+  try{ctx.setTransform(...tr);s.draw(t,cs,tr);}
+  finally{mosaicShadowScale=1;}
+}
+FISHL={
+  // The low light is seen first by the last gallery pieces as they settle.
+  // The eye stays a reserve in that light so the approaching little fish has a destination.
+  hint:t=>.78*.13*smooth(TG1-1.85,TG1-.98,t),
+  // The first harp note is 420 ms before the bell; the fourteenth is 30 ms before.
+  // Keep both options on the same level envelope. The spatial front is what changes.
+  k:t=>{
+    const strum=smooth(TG1-.42,TG1-.24,t);
+    const local=lerp(FISHL.hint(t),.78*.47,strum);
+    const bloom=.58*smooth(TG1,TG1+.26,t)+.42*smooth(TG1,TG1+.93,t);
+    return lerp(local,.78,bloom);
+  },path:(c,t)=>{const P=(x,y)=>[FC[0]+x,FC[1]+y+bigWave(x,t)];const C=(a,b,d,e,f,g)=>{const A=P(a,b),B=P(d,e),D=P(f,g);c.bezierCurveTo(A[0],A[1],B[0],B[1],D[0],D[1]);};
+    c.beginPath();c.moveTo(...P(-2620,60));
+    C(-2580,-360,-2300,-760,-1900,-850);
+    C(-1690,-901,-1490,-969,-1380,-1050);
+    C(-1220,-1168,-1020,-1400,-694,-1518);
+    C(-578,-1560,-517,-1574,-464,-1549);
+    C(-397,-1517,-337,-1420,-231,-1333);
+    C(-83,-1212,41,-1184,176,-1090);
+    C(355,-966,456,-863,600,-700);
+    C(800,-470,1000,-360,1200,-360);
+    C(1500,-380,2100,-900,2780,-1260);
+    C(2600,-760,2380,-300,2330,0);C(2380,300,2600,760,2780,1260);
+    C(2100,900,1500,380,1200,360);C(1000,360,800,470,600,700);
+    C(472,844,301,972,196,1026);
+    C(135,1058,139,1136,160,1226);
+    C(182,1322,218,1413,243,1452);
+    C(145,1436,-11,1385,-151,1269);
+    C(-239,1196,-285,1148,-384,1135);
+    C(-473,1124,-539,1124,-600,1120);
+    C(-1100,1080,-1500,880,-1900,760);
+    C(-2300,640,-2580,420,-2620,60);c.closePath();c.fill();},
   eye:t=>[FC[0]+EYE_REL[0],FC[1]+EYE_REL[1]+bigWave(EYE_REL[0],t),EYE_R],
-  extra:(c,t)=>{const k=0.62*smooth(TG1+0.1,TG1+1.0,t);if(k<=0.001)return;c.fillStyle=`rgba(255,248,236,${k.toFixed(4)})`;c.beginPath();c.ellipse(FC[0]+1640,FC[1]-1150,340,490,0,0,7);c.fill();}};
+  extra:(c,t)=>{const k=0.62*smooth(TG1+0.83,TG1+1.65,t);if(k<=0.001)return;c.fillStyle=`rgba(255,248,236,${k.toFixed(4)})`;c.beginPath();c.ellipse(FC[0]+1640,FC[1]-1150,340,490,0,0,7);c.fill();}};
 LINES.push([T11CAP[0],T11CAP[1],['这一站','是代码画的'],1680,330]);
 LINES.push([T11CAP2[0],T11CAP2[1],['前面十站','也是'],1680,330]);
 // 路线：从右边游进代码屏，沉到屏的下半边（上半边留给代码），慢慢往左漂——全程不从代码上面穿过。
@@ -209,9 +301,13 @@ GK.push([137.4,-6400,22],[138.2,-6492,74],[139.0,-6556,118],[140.0,-6600,136],[1
   [151.0,-6836,140],[151.5,-6856,139],[T11RUN,-6880,136],[152.25,-6925,131],[152.55,-6990,121],[152.85,-7075,104],[153.15,-7165,78],
   [153.45,-7230,38],[153.75,-7245,-15],[154.05,-7200,-75],[154.35,-7080,-140],[154.65,-6880,-210],[154.95,-6620,-280],[155.25,-6330,-340],[155.55,-6040,-390],[155.85,-5770,-425],
   [156.15,-5530,-448],[156.45,-5340,-458],[156.75,-5190,-452]);
-{const ex=FC[0]+EYE_REL[0],ey=FC[1]+EYE_REL[1];for(let i=1;i<16;i++){const th=Math.PI-i*Math.PI/2;GK.push([TG1+0.1+0.62*(i-1),ex+58*Math.cos(th),ey+58*Math.sin(th)]);}}
+{const ex=FC[0]+EYE_REL[0],ey=FC[1]+EYE_REL[1];// One shrinking orbit settles into an open, breathing pupil.
+ for(const [dt,dx,dy] of [[.10,0,53],[.57,58,4],[1.03,14,-43],[1.48,-36,-11],[1.90,-17,22],[2.25,12,14],[2.60,28,1],[2.95,33,-3],[3.35,34,-3.5],[7.4,34,-3.5]])
+   GK.push([TG1+dt,ex+dx,ey+dy]);}
 HL.push([136.6,140],[138.0,150],[153.2,150],[156.2,112]);
 // 在代码屏里游得慢，尾巴摆得稍微有劲一点，各种画法才看得出是活的
+HAMP.push(t=>1-0.85*smooth(TG1+1.5,TG1+3.0,t));
+HOFF.push(t=>[0,smooth(TG1+0.15,TG1+1.5,t)*bigWave(EYE_REL[0],t)]);
 HAMP.push(t=>1+0.5*smooth(140.5,142.5,t)*(1-smooth(151.6,152.6,t)));
 HFB.push(t=>0.32*smooth(140.5,142.5,t)*(1-smooth(151.6,152.6,t)));
 CK.push({t:137.6,x:S11X+180,y:0,z:1.35,f:0.5,ox:-60},{t:139.0,x:S11X+44,y:-10,z:2.02},{t:142.8,x:S11X+46,y:4,z:2.08},{t:144.4,x:S11X+50,y:46,z:2.2},{t:150.8,x:S11X+50,y:52,z:2.27},{t:T11BACK[0],x:S11X+50,y:50,z:2.28},{t:TG1-0.1,x:-2970,y:-20,z:0.31},{t:T_FIN,x:-2970,y:-20,z:0.318});

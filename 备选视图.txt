@@ -1,0 +1,12 @@
+当前 film.html 是本轮审片整片，沿用原代码鱼骨架。甲骨、铜洗、宋画、剪纸、游戏机、水域与终章排布均为本轮版次。
+运行 python3 build.py 后，执行 node tools/build-options.cjs。
+film-spine.html 显示 33 个脊线采样点，film-sections.html 显示背腹截面。
+film-chronological.html 使用从鱼头到鱼尾的年代布局 B。
+film-pillow.html 与 film-blue-rim.html 分别预览瓷枕和青花盘外沿两稿。
+每个文件均可单独预览，分站源码与 film.html 保留。
+
+本次审片整片更新了铜洗铸鱼、宋画伴鱼、剪纸刀路、游戏机和 2003 年水域。出屏串色沿用原版。
+
+磁州窑与剪纸精修版的 film.html 对应本轮成片。film-pillow.html 保留此前的瓷枕外沿试稿。
+
+磁州窑鱼藻纹与双鱼铜洗修订收在本版 film.html 和各站源码。

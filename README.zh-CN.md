@@ -6,7 +6,7 @@
 
 **一条鱼从六千年前的彩陶盆里游出来，一路游过十一件中国艺术品。<br>每碰到一件，它就变成那件作品里的样子。**
 
-[▶ 在线观看](https://fish6000.vercel.app) · [⬇ 下载 1080p 30 帧成片](../../releases/latest) · [更新记录](CHANGELOG.zh-CN.md) · [English](README.md)
+[▶ 在线观看](https://fish6000.vercel.app) · [⬇ 下载 1080p 40 帧成片](../../releases/latest) · [更新记录](CHANGELOG.zh-CN.md) · [English](README.md)
 
 </div>
 
@@ -43,15 +43,15 @@
 
 **只看：** 用 Chrome 或 Edge 打开 `film.html`。空格播放，`[` `]` 跳站，`,` `.` 逐帧，`S` 存下当前这一帧。
 
-**渲染成视频：** 需要 Node.js 20+、ffmpeg 和 Chrome。
+**渲染成视频：** 需要 Node.js 20+、ffmpeg 和 Chrome 或 Edge。成片是 40 帧/秒。
 
 ```bash
 npm install
-node render.js video film_silent.mp4 --jobs 4
-node render.js mux film_silent.mp4 score_full.wav film.mp4
+node render.js video film_silent.mp4 --fps 40 --crf 18 --preset veryfast --jobs 4
+ffmpeg -i film_silent.mp4 -i score_film.m4a -map 0:v:0 -map 1:a:0 -c copy -movflags +faststart film.mp4
 ```
 
-4K 60 帧要在第二行加上 `--fps 60 --scale 2 --crf 20 --preset medium`。这不是把 1080p 放大，而是把每张画布按两倍像素重画。
+4K 运行 `python3 tools/export-4k.py --jobs 4`（另需 Python 3），直接得到带声的 `film-4k.mp4`（3840 × 2160）。这不是把 1080p 放大，而是把每张画布按两倍像素重画。
 
 **改了代码之后：** 运行 `python build.py`，把 `film/` 里的源码重新拼成 `film.html`。
 

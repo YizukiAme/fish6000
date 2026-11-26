@@ -1,6 +1,7 @@
 // ================= 预览播放器 =================
 // 直接用浏览器打开 film.html 时出现；渲染脚本打开时（无头浏览器 / 地址里带 ?render）不出现，不影响出片。
 (()=>{if(navigator.webdriver||/[?&]render/.test(location.search))return;
+const soundtrack=location.protocol==='file:'?'score_full.wav':'score_film.m4a';
 const CHAP=[[0,'壹 · 彩陶'],[23.8,'贰 · 甲骨'],[33.25,'叁 · 拓片'],[41.55,'肆 · 铜洗'],[49.75,'伍 · 磁州窑'],[59.45,'陆 · 宋画'],[77.05,'柒 · 青花'],
   [105.15,'捌 · 年画'],[113.45,'玖 · 剪纸'],[122.75,'拾 · 像素'],[141.55,'拾壹 · 代码'],[157.85,'终章']];
 const st=document.createElement('style');st.textContent=`
@@ -17,14 +18,14 @@ document.head.appendChild(st);
 const ld=document.createElement('div');ld.id='ld';ld.textContent='准备中……第一次打开要算几秒';document.body.appendChild(ld);
 const pl=document.createElement('div');pl.id='pl';pl.innerHTML=`<div class="row">
 <button id="pp" title="播放 / 暂停（空格）">▶</button><span class="tm" id="tm">00:00.0</span>
-<input type="range" id="sk" min="0" max="${T_END}" step="${1/30}" value="0">
+<input type="range" id="sk" min="0" max="${T_END}" step="${1/40}" value="0">
 <select id="ch" title="跳到某一站（[ ] 上一站 / 下一站）">${CHAP.map(([t,n])=>`<option value="${t}">${n}</option>`).join('')}</select>
 <select id="sp" title="速度"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option></select>
 <button id="mu" title="静音（M）">♪</button><button id="sv" title="把这一帧存成 PNG（S）">存图</button><button id="fs" title="全屏（F）">⛶</button></div>
-<div class="hint">空格 播放/暂停 · ← → 前后 1 秒（按住 Shift 5 秒）· , . 逐帧 · [ ] 跳站 · S 存图 · F 全屏 · M 静音　|　配乐读同一文件夹里的 score_full.wav，没有它就静音播放</div>`;
+<div class="hint">空格 播放/暂停 · ← → 前后 1 秒（按住 Shift 5 秒）· , . 逐帧 · [ ] 跳站 · S 存图 · F 全屏 · M 静音　|　配乐文件：${soundtrack}</div>`;
 document.body.appendChild(pl);
 const $=id=>document.getElementById(id);
-const au=new Audio();au.preload='auto';let hasAu=false;au.addEventListener('canplay',()=>{hasAu=true;});au.addEventListener('error',()=>{hasAu=false;});au.src='score_full.wav';
+const au=new Audio();au.preload='auto';let hasAu=false;au.addEventListener('canplay',()=>{hasAu=true;});au.addEventListener('error',()=>{hasAu=false;});au.src=soundtrack;
 let playing=false,t=0,t0=0,base=0,rate=1,dirty=true,ready=false;
 const now=()=>{if(!playing)return t;if(hasAu&&!au.paused&&!au.ended)return au.currentTime;return t0+(performance.now()-base)/1000*rate;};
 function play(){if(t>=T_END-0.05)t=0;playing=true;t0=t;base=performance.now();if(hasAu){au.currentTime=t;au.playbackRate=rate;au.play().catch(()=>{});}$('pp').textContent='❚❚';}
@@ -43,7 +44,7 @@ $('fs').onclick=()=>{document.fullscreenElement?document.exitFullscreen():docume
 addEventListener('keydown',e=>{if(!ready)return;const k=e.key;
   if(k===' '||k==='k'){e.preventDefault();playing?pause():play();}
   else if(k==='ArrowRight')seek(now()+(e.shiftKey?5:1));else if(k==='ArrowLeft')seek(now()-(e.shiftKey?5:1));
-  else if(k==='.'||k==='>'){if(playing)pause();seek(t+1/30);}else if(k===','||k==='<'){if(playing)pause();seek(t-1/30);}
+  else if(k==='.'||k==='>'){if(playing)pause();seek(t+1/40);}else if(k===','||k==='<'){if(playing)pause();seek(t-1/40);}
   else if(k===']'){const i=chapAt(now());if(i<CHAP.length-1)seek(CHAP[i+1][0]);}else if(k==='['){const x=now(),i=chapAt(x);seek(x-CHAP[i][0]>1.5?CHAP[i][0]:CHAP[Math.max(0,i-1)][0]);}
   else if(k==='Home')seek(0);else if(k==='End')seek(T_END);
   else if(k==='s'||k==='S')$('sv').click();else if(k==='f'||k==='F')$('fs').click();else if(k==='m'||k==='M')$('mu').click();

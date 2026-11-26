@@ -24,7 +24,7 @@ function hiRes(c){c.width=W*SS;c.height=H*SS;c._ss=SS;const x=c.getContext('2d')
   const fd=Object.getOwnPropertyDescriptor(P,'filter');
   Object.defineProperty(x,'filter',{get(){return fd.get.call(this).replace(/(-?[\d.]+)px/g,(m,n)=>(+n/SS)+'px');},set(v){fd.set.call(this,String(v).replace(/(-?[\d.]+)px/g,(m,n)=>(+n*SS)+'px'));}});
   st.call(x,SS,0,0,SS,0,0);return x;}
-const cv=document.getElementById('cv');const ctx=hiRes(cv);
+const cv=document.getElementById('cv');const ctx=hiRes(cv);let mosaicShadowScale=1;
 const SERIF='"Noto Serif CJK SC", serif';
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
 const lerp=(a,b,p)=>a+(b-a)*p;

@@ -153,7 +153,7 @@ function prepBasin(){
   // 修补的石膏块：颜色略平、略粉
   {const x=bctxOf(base);x.save();x.beginPath();PATCH.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.closePath();x.clip();
     x.fillStyle='rgb(176,104,70)';x.fillRect(-RB-10,-RB-10,2*RB+20,2*RB+20);x.globalAlpha=0.28;x.fillStyle=PLATEGRAIN;x.globalCompositeOperation='multiply';x.fillRect(-RB-10,-RB-10,2*RB+20,2*RB+20);x.restore();
-    x.save();x.globalCompositeOperation='destination-out';x.beginPath();x.arc(0,0,RB+0.3,0,7);x.arc(0,0,RB+30,0,7,true);x.fill();x.restore();}
+    x.save();x.globalCompositeOperation='destination-out';x.beginPath();x.arc(0,0,RB+0.3,0,2*Math.PI);x.moveTo(RB+30,0);x.arc(0,0,RB+30,0,2*Math.PI);x.fill('evenodd');x.restore();}
   // 顶层：裂缝（粘接线）、土沁（预先乘了明暗）
   const top=mk(BW,BW);const tx=bctxOf(top);tx.lineCap='round';tx.lineJoin='round';
   const crackLine=(pts,w0)=>{for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1];const s=shadeAt((a[0]+b[0])/2,(a[1]+b[1])/2);
@@ -164,6 +164,10 @@ function prepBasin(){
     if(Math.hypot(cx0,cy0)>RB-8)continue;const s=shadeAt(cx0,cy0);tx.save();tx.filter=`blur(${(2.2*MSB).toFixed(1)}px)`;tx.fillStyle=`rgba(${206*s|0},${190*s|0},${166*s|0},${0.07+r()*0.06})`;blob(tx,cx0,cy0,5+r()*7,cl*31+5);tx.fill();tx.restore();
     const nn=4+Math.floor(r()*6);for(let k=0;k<nn;k++){const x0=cx0+(r()-.5)*12,y0=cy0+(r()-.5)*12;tx.fillStyle=`rgba(${214*s|0},${200*s|0},${178*s|0},${0.08+r()*0.13})`;blob(tx,x0,y0,0.5+r()*1.6,cl*97+k*13+7);tx.fill();}}
   tx.setTransform(1,0,0,1,0,0);tx.globalCompositeOperation='destination-out';tx.globalAlpha=0.35;tx.fillStyle=INKGRAIN;tx.fillRect(0,0,BW,BW);
+  // Reuse the actual clay silhouette in texture coordinates, including its antialiased rim.
+  tx.setTransform(1,0,0,1,0,0);
+  tx.globalCompositeOperation='destination-in';tx.globalAlpha=1;
+  tx.drawImage(base,0,0);
   Object.assign(BASIN,{base,shade,spec,wear,top});}
 
 // ---------- 布景：亚麻衬板 ----------

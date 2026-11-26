@@ -6,7 +6,7 @@ const GK=[];       // 主角路线关键点 [t,x,y]（壹之后）
 const HL=[[0,140]];// 主角身长关键帧 [t,L]
 const HAMP=[],HFB=[],HOFF=[],HSTIFF=[];// 摆动幅度乘子、尾频加成：函数 t=>值
 const LIGHTS=[],LABELS=[],LINES=[],SHAKES=[],WINKS=[11.0];
-function panelShadow(x,y,w,h,k=1){ctx.save();ctx.shadowColor=`rgba(40,30,20,${0.35*k})`;ctx.shadowBlur=30;ctx.shadowOffsetY=12;ctx.fillStyle='#000';ctx.fillRect(x,y,w,h);ctx.restore();}
+function panelShadow(x,y,w,h,k=1){ctx.save();ctx.shadowColor=`rgba(40,30,20,${0.35*k})`;ctx.shadowBlur=30*mosaicShadowScale;ctx.shadowOffsetY=12*mosaicShadowScale;ctx.fillStyle='#000';ctx.fillRect(x,y,w,h);ctx.restore();}
 function drawWall(cam){const z=cam.z;const x0=cam.x-W/2/z-10,y0=cam.y-H/2/z-10,w=W/z+20,h=H/z+20;
   ctx.fillStyle='#e6e0d5';ctx.fillRect(x0,y0,w,h);ctx.fillStyle=WALLPAT;ctx.fillRect(x0,y0,w,h);
   const g=ctx.createLinearGradient(0,-900,0,900);g.addColorStop(0,'rgba(50,40,30,0.18)');g.addColorStop(0.35,'rgba(50,40,30,0)');g.addColorStop(0.7,'rgba(50,40,30,0)');g.addColorStop(1,'rgba(50,40,30,0.2)');ctx.fillStyle=g;ctx.fillRect(x0,y0,w,h);}
@@ -37,6 +37,29 @@ function applyLights(t,TR){const a=AMBIENT(t);lctx.setTransform(1,0,0,1,0,0);lct
   if(FISHL){const fk=FISHL.k(t);if(fk>0.001){flx.reset();flx.setTransform(...TR);flx.filter=`blur(${(46*TR[0]).toFixed(1)}px)`;flx.fillStyle='rgb(255,248,236)';FISHL.path(flx,t);
     // 鱼身、背鳍、腹鳍先拼成不透明的一整块，再整体调亮度：鳍和身子叠住的那一溜不会更亮
     flx.filter='none';flx.setTransform(1,0,0,1,0,0);flx.globalCompositeOperation='destination-in';flx.fillStyle=`rgba(0,0,0,${fk.toFixed(4)})`;flx.fillRect(0,0,W,H);flx.globalCompositeOperation='source-over';flx.setTransform(...TR);
+    if(t<TG1+1.65){
+      const [eyeX,eyeY]=FISHL.eye(t);
+      const first=TG1-.42,last=TG1-.03;
+      const plucks=clamp((t-first)/(last-first));
+      // The same front passes the cheek during the strum and keeps its velocity
+      // as the bell enters. A Hermite easing only slows it once it reaches the fins.
+      const near=100,cheek=1680,tail=6000,finish=TG1+1.40;
+      let radius=lerp(near,cheek,plucks);
+      if(t>last){
+        const u=clamp((t-last)/(finish-last)),u2=u*u,u3=u2*u;
+        const startSlope=(cheek-near)/(last-first);
+        radius=cheek+(tail-cheek)*(3*u2-2*u3)+(finish-last)*startSlope*(u3-2*u2+u);
+      }
+      const feather=lerp(300,950,smooth(100,1800,radius));
+      const mask=flx.createRadialGradient(eyeX,eyeY,Math.max(0,radius-.62*feather),
+        eyeX,eyeY,radius+.38*feather);
+      // Add the main sweep above the light already visible on the wall.
+      // The unlit side stays steady until reached; the lit side keeps its original peak.
+      const floor=FISHL.hint(t)/fk;
+      const ink=amount=>'rgba(0,0,0,'+lerp(floor,1,amount).toFixed(5)+')';
+      mask.addColorStop(0,ink(1));mask.addColorStop(.55,ink(.78));mask.addColorStop(1,ink(0));
+      flx.globalCompositeOperation='destination-in';flx.fillStyle=mask;flx.fillRect(FC[0]-4600,FC[1]-2400,9200,4800);
+    }
     const [ex,ey,er]=FISHL.eye(t);flx.filter=`blur(${(26*TR[0]).toFixed(1)}px)`;flx.globalCompositeOperation='destination-out';flx.fillStyle='rgba(0,0,0,0.92)';flx.beginPath();flx.arc(ex,ey,er,0,7);flx.fill();
     if(FISHL.extra){flx.globalCompositeOperation='source-over';flx.filter=`blur(${(70*TR[0]).toFixed(1)}px)`;FISHL.extra(flx,t);}
     lctx.save();lctx.setTransform(1,0,0,1,0,0);lctx.globalCompositeOperation='lighter';lctx.drawImage(FLC,0,0);lctx.restore();}}

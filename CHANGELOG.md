@@ -2,6 +2,19 @@
 
 English · [中文](CHANGELOG.zh-CN.md)
 
+## [v2.0] — 2026-11-26
+
+1. Rework the oracle bone and the Han stone rubbing. The polished shell shows flaking edges, shallow seams and deeper divination cracks. In the rubbing, tapered cuts define the fish scales and short bands of water leave more space around the catch.
+2. Recast the twin fish in low relief on the bronze basin. Patches of patina run across the basin floor and over their flanks. As the visiting fish leaves, its head turns first, its tail sweeps over the rim and the camera follows (0:45–0:49).
+3. Rebuild the Cizhou pillow with a curved glazed face and painted sides. The brush lays in a dark head, traces the back and belly, crosses two sets of strokes into diamond scales, then dots the eye (0:53–0:56).
+4. Redraw the fish in the Song silk painting with layered washes and fine fin rays. A flowering branch enters at the upper right. The fish carries a petal out of the painting, and both keep their painted appearance until they cross the rim of the porcelain dish (1:05–1:22).
+5. Redraw the Yuan dish with an interlaced border, scrolling lotus and clusters of water plants. Stronger cobalt washes define the fish’s gills, scales and fins. A broken reflection follows its back as it lifts from the glaze.
+6. Animate the child’s hand releasing the carp in the Yangliuqing print. Rework the paper-cut sequence so the blades follow the folded design in two passes and the offcuts fall away from the openings they leave (1:52–1:59).
+7. Remodel the CRT, cartridge console and wired controller. Redraw the handheld and 16-colour backgrounds, and give the 2003 underwater level distinct prey, distant shoals and rippling light on the sandy bed (2:04–2:19).
+8. Keep the code editor’s highlight on the drawing call that produced the fish on screen. The final loop now shows all 6,934 frames at 40 fps.
+9. Restage the gallery finale. The eleven works settle into position at different sizes. Light travels from the eye across the front of the fish with the fourteen plucked notes. The little fish reaches the eye on the bell and drum at 2:42.35, and the light continues to the tail. On the closing card, the comma takes the shape of a fish from the outline of the printed glyph.
+10. Bundle the film’s stereo AAC track and add a resumable native 4K export at 40 fps. The project also includes a 1080p40 export recipe. Running time is 2:53.35.
+
 ## [v1.8] — 2026-11-26
 
 1. Redraw the Yangliuqing New Year print (1:45–1:53). A black-headed carp with red scales and a gold tail settles into the child’s arms beneath the inscription 蓮年有餘, set in Yuji Syuku.
@@ -90,3 +103,5 @@ English · [中文](CHANGELOG.zh-CN.md)
 [v1.7]: https://github.com/YizukiAme/fish6000/compare/v1.6...v1.7
 
 [v1.8]: https://github.com/YizukiAme/fish6000/compare/v1.7...v1.8
+
+[v2.0]: https://github.com/YizukiAme/fish6000/compare/v1.8...v2.0

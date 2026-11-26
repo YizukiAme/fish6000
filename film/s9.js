@@ -1,6 +1,5 @@
 // ================= 玖 · 剪纸「双鱼」（民间，仿） =================
-// 红纸对折。主角钻进纸下面，剪刀先沿着它的轮廓走一圈，再从头到尾把眼、鳃、鳞、鳍条一刀刀剪出来，碎纸屑往下掉；
-// 余纸落下，纸展开成一对双鱼，停一会儿让人看清；然后右边那条——主角——从纸上揭起来飞走
+// 红纸对折，剪刀沿外廓剪两段。纸屑随余纸落下，展开是双鱼，右边的主角揭起游走。
 const S9X=-5270,S9Y=0,S9W=420,AR9=55;
 const T9IN=110.3,T9CUT=[111.0,112.1],T9DET=[112.15,113.1],T9DROP=[113.15,113.65],T9OPEN=[113.75,114.65],T9LIFT=116.0;
 const RED9='rgb(196,30,34)';
@@ -26,8 +25,8 @@ function paperSil(c,p){const pr=PROF_CUT;bodyFill(c,edges(p,pr));c.fill();c.begi
 function slit9(c,a,b,w,k=0){const dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1,nx=-dy/l,ny=dx/l,mx=(a[0]+b[0])/2+nx*k*l,my=(a[1]+b[1])/2+ny*k*l;
   c.beginPath();c.moveTo(a[0],a[1]);c.quadraticCurveTo(mx+nx*w,my+ny*w,b[0],b[1]);c.quadraticCurveTo(mx-nx*w,my-ny*w,a[0],a[1]);c.fill();}
 // 月牙：外弧和内弧在两头收成尖
-function crescent9(c,cx,cy,r,ang,th){c.beginPath();const K=10;for(let i=0;i<=K;i++){const a=ang-1.05+2.1*i/K;c.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);}
-  for(let i=K;i>=0;i--){const a=ang-1.05+2.1*i/K,rr=r*(1-th*Math.sin(Math.PI*i/K));c.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);}c.closePath();c.fill();}
+function crescent9(c,cx,cy,r,ang,th,g=1){c.beginPath();const K=10;for(let i=0;i<=K;i++){const a=ang-1.05+2.1*i/K*g;c.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);}
+  for(let i=K;i>=0;i--){const a=ang-1.05+2.1*i/K*g,rr=r*(1-th*Math.sin(Math.PI*i/K*g));c.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);}c.closePath();c.fill();}
 // 鱼身上所有的刀口，各带一个“在鱼身上多靠后”的位置 u：细剪的时候剪刀从头扫到尾，扫到哪儿哪儿的刀口就出来
 function cutList9(p){const pr=PROF_CUT,L=p.L,out=[];
   const ey=bodyAt(p,pr,0.085,0.3);out.push({k:'eye',u:0.085,c:ey,r:0.027*L});
@@ -41,66 +40,275 @@ function cutList9(p){const pr=PROF_CUT,L=p.L,out=[];
     const A=[lerp(a[0],o[0],0.18),lerp(a[1],o[1],0.18)],B=[lerp(a[0],o[0],0.66),lerp(a[1],o[1],0.66)];out.push({k:'slit',u:lerp(u0,u1,i/(f.base.length-1)),a:A,b:B,w:0.006*L,kv:0,c:B});}
   // 尾上的刀口：从尾柄放射出去，剪到离边一点就停
   {const F=tail9(p,pr).F;for(const g of [0.13,0.065,0,-0.065,-0.13]){const A=F(0.03,g*0.2),B=F(0.155-Math.abs(g)*0.25,g*1.15);out.push({k:'slit',u:0.9+0.02*Math.abs(g)/0.13,a:A,b:B,w:0.006*L,kv:0,c:B});}}
-  return out.sort((x,y)=>x.u-y.u);}
-// us：剪刀扫到了鱼身的哪儿（不给就是全部剪完）
-function paperCuts(c,p,us){c.save();c.globalCompositeOperation='destination-out';c.fillStyle='#000';
-  for(const q of cutList9(p)){const g=us===undefined?1:clamp((us-q.u)/0.03);if(g<=0)continue;const e=1-(1-g)*(1-g);
-    if(q.k==='eye'){c.beginPath();c.arc(q.c[0],q.c[1],q.r*e,0,7);c.fill();}
-    else if(q.k==='cres')crescent9(c,q.c[0],q.c[1],q.r*(0.55+0.45*e),q.ang,q.th*e);
-    else slit9(c,q.a,[lerp(q.a[0],q.b[0],e),lerp(q.a[1],q.b[1],e)],q.w,q.kv);}
-  c.restore();}
+  const bellyA=bodyAt(p,pr,.37,-.63),bellyB=bodyAt(p,pr,.66,-.49);
+  out.push({k:'slit',u:.61,a:bellyA,b:bellyB,w:.023*L,kv:.11,c:bodyAt(p,pr,.52,-.62)});
+  return out.filter(q=>{
+    if(q.k!=='cres'||q.u<=.37||q.u>=.66)return true;
+    const mid=spineAt(p,q.u);return (q.c[0]-mid.x)*mid.nx+(q.c[1]-mid.y)*mid.ny>=0;
+  }).sort((x,y)=>x.u-y.u);}
+function opening9(c,q) {
+  if(q.k==='eye'){c.beginPath();c.arc(q.c[0],q.c[1],q.r,0,7);c.fill();}
+  else if(q.k==='cres')crescent9(c,...q.c,q.r,q.ang,q.th,1);
+  else slit9(c,q.a,[lerp(q.a[0],q.b[0],1),lerp(q.a[1],q.b[1],1)],q.w,q.kv);
+}
+function paperCuts(c,p){
+  c.save();c.globalCompositeOperation='destination-out';c.fillStyle='#000';
+  for(const q of cutList9(p))opening9(c,q);
+  c.restore();
+}
+function revealPaperWindows9(c,plan,t){
+  for(const {q,touch,duration} of plan.windows){
+    if(t<touch)continue;
+    c.save();
+    const age=(t-touch)/duration;
+    if(age<1&&q.k==='cres'){crescent9(c,...q.c,q.r,q.ang,q.th,smooth(0,1,age));c.restore();continue;}
+    if(age<1&&q.k==='slit'){
+      const dx=q.b[0]-q.a[0],dy=q.b[1]-q.a[1],len=Math.hypot(dx,dy)||1;
+      c.save();c.translate(...q.a);c.rotate(Math.atan2(dy,dx));c.beginPath();
+      c.rect(-3,-len-5,(len+6)*smooth(0,1,age),2*(len+5));c.clip();
+      c.rotate(-Math.atan2(dy,dx));c.translate(-q.a[0],-q.a[1]);opening9(c,q);
+      c.restore();c.restore();continue;
+    }
+    if(age<1){
+      const radius=q.r||Math.hypot(q.a[0]-q.b[0],q.a[1]-q.b[1])+3;
+      c.beginPath();c.rect(q.c[0]-radius-2,q.c[1]-radius-2,2*radius+4,(2*radius+4)*smooth(0,1,age));c.clip();
+    }
+    opening9(c,q);c.restore();
+  }
+}
 function mirrorPose(p,ax){return{...p,sp:p.sp.map(q=>({x:2*ax-q.x,y:q.y,nx:-q.nx,ny:q.ny}))};}
 // 右半边的纹样（鱼以外）：外圈、顶上的花、底下的浪、连到鱼背的水草
 function frameHalf(c){c.fillStyle=RED9;c.strokeStyle=RED9;c.lineCap='round';c.lineJoin='round';
   c.beginPath();c.arc(S9X,S9Y,126,-Math.PI/2,Math.PI/2);c.arc(S9X,S9Y,117,Math.PI/2,-Math.PI/2,true);c.closePath();c.fill();
   c.lineWidth=5;c.beginPath();c.moveTo(S9X,S9Y-117);c.lineTo(S9X,S9Y-86);c.stroke();
-  for(let i=0;i<5;i++){const a=-Math.PI/2+(i-2)*0.62;if(Math.cos(a)<-0.05)continue;c.beginPath();c.ellipse(S9X+Math.cos(a)*10,S9Y-76+Math.sin(a)*10,9,5.5,a,0,7);c.fill();}c.beginPath();c.arc(S9X,S9Y-76,6,-Math.PI/2,Math.PI/2);c.fill();
+  c.save();c.translate(S9X,S9Y-89);c.beginPath();
+  c.moveTo(0,-5);c.bezierCurveTo(6,-5,8,-1,9,2);c.bezierCurveTo(15,-1,20,-2,25,-3);
+  c.bezierCurveTo(24,4,20,10,11,13);c.bezierCurveTo(7,15,4,18,0,20);c.closePath();
+  c.moveTo(3,1);c.bezierCurveTo(8,4,9,9,3,14);c.bezierCurveTo(5,9,3,4,3,1);c.closePath();
+  c.moveTo(20,1);c.bezierCurveTo(18,7,14,9,8,11);c.bezierCurveTo(11,6,16,3,20,1);c.closePath();c.fill('evenodd');c.restore();
   for(let j=0;j<3;j++){const y0=S9Y+80+j*12;c.beginPath();c.moveTo(S9X,y0);for(let x=0;x<=118;x+=4)c.lineTo(S9X+x,y0+4*Math.sin(x*0.13+j*1.4));c.lineWidth=4.2;c.stroke();}
   c.lineWidth=4;for(const [a0,a1] of [[-38,-30],[2,6],[38,34]]){const p0=[S9X+118*Math.cos(a0*Math.PI/180),S9Y+118*Math.sin(a0*Math.PI/180)],p1=[S9X+86*Math.cos(a1*Math.PI/180),S9Y+86*Math.sin(a1*Math.PI/180)];
     c.beginPath();c.moveTo(p0[0],p0[1]);c.quadraticCurveTo((p0[0]+p1[0])/2+6,(p0[1]+p1[1])/2-6,p1[0],p1[1]);c.stroke();}}
 const PAPERTEX=(()=>{const c=mk(256,256);const x=c.getContext('2d');const r=rng(931);for(let i=0;i<2600;i++){x.fillStyle=`rgba(${r()<.5?255:60},${r()<.5?220:20},${r()<.5?200:20},${0.04+r()*0.06})`;x.fillRect(r()*256,r()*256,1+r()*2,1);}return c;})();
-const C9=mk(W,H),c9=C9.getContext('2d');
-let POSE9=null;
-const US9=t=>lerp(0.03,1.04,clamp((t-T9DET[0])/(T9DET[1]-T9DET[0])));   // 细剪时剪刀扫到鱼身的哪儿
-function drawPaper9(t,cam,TR){const z=cam.z;const cut=clamp((t-T9CUT[0])/(T9CUT[1]-T9CUT[0])),det=t>=T9DET[0],drop=smooth(T9DROP[0],T9DROP[1],t),open=smooth(T9OPEN[0],T9OPEN[1],t),lifted=t>=T9LIFT;
-  if(!POSE9)POSE9=fishPose(HERO,T9LIFT-0.05);
-  const half=(c,withFish)=>{c.save();c.beginPath();c.rect(S9X,S9Y-400,400,800);c.clip();c.fillStyle=RED9;frameHalf(c);if(withFish){paperSil(c,POSE9);if(drop>0.02||open>0)paperCuts(c,POSE9);c.globalCompositeOperation='source-over';}c.restore();};
+const C9=mk(W,H),c9=C9.getContext('2d'),foldCast9=mk(W,H),foldCtx9=foldCast9.getContext('2d');
+
+let cuttingPlan9, POSE9=null, paperWaste9=null, paperStencil9=null, foldedCuts9=null;
+
+  // Measure the waste side of the final, single folded stencil. This gives the
+  // lotus, rim, fin tips and waves the very same edges they have after the peel.
+  function prepareFoldedCuts9(stencil, fish, scale) {
+    const w=stencil.width,h=stencil.height;
+    const red=stencil.getContext('2d').getImageData(0,0,w,h).data;
+    const support=mk(w,h), sc=support.getContext('2d');
+    sc.setTransform(scale,0,0,scale,-S9X*scale,(150-S9Y)*scale);
+    sc.fillStyle='#000';paperSil(sc,fish);
+    const body=sc.getImageData(0,0,w,h).data;
+    const dist=new Float32Array(w*h),diag=Math.SQRT2;
+    for(let i=0;i<dist.length;i++)dist[i]=red[4*i+3]>=128?0:10000;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const i=y*w+x;
+      if(x)dist[i]=Math.min(dist[i],dist[i-1]+1);
+      if(y){dist[i]=Math.min(dist[i],dist[i-w]+1);
+        if(x)dist[i]=Math.min(dist[i],dist[i-w-1]+diag);
+        if(x+1<w)dist[i]=Math.min(dist[i],dist[i-w+1]+diag);}
+    }
+    for(let y=h-1;y>=0;y--)for(let x=w-1;x>=0;x--){
+      const i=y*w+x;
+      if(x+1<w)dist[i]=Math.min(dist[i],dist[i+1]+1);
+      if(y+1<h){dist[i]=Math.min(dist[i],dist[i+w]+1);
+        if(x)dist[i]=Math.min(dist[i],dist[i+w-1]+diag);
+        if(x+1<w)dist[i]=Math.min(dist[i],dist[i+w+1]+diag);}
+    }
+    const pixel=[],arrival=[],opacity=[];
+    for(let row=0;row<h;row++)for(let col=0;col<w;col++){
+      const i=row*w+col,a=i*4+3;
+      if(!dist[i]||dist[i]>7*scale||body[a]>126)continue;
+      const x=(col+.5)/scale,y=(row+.5)/scale-150;
+      const radius=Math.hypot(x,y),arc=(Math.atan2(y,x)+Math.PI/2)/Math.PI;
+      let start, width, notch=0, rowWave=-1,near=100;
+      if(x<121&&y>71&&y<114)for(let j=0;j<3;j++){
+        const d=Math.abs(y-(80+j*12+4*Math.sin(x*.13+j*1.4)));
+        if(d<near){near=d;rowWave=j;}
+      }
+      if(near<7.5){
+        start=111.72+rowWave*.26+(rowWave===1?1-x/120:x/120)*.45;
+        width=1.75;
+        // A few narrow slivers between adjacent waves are freed ahead of the big offcut.
+        // Their width closes toward the ends, as it does when two cuts meet.
+        if(y>81&&y<104)notch=4.15*Math.max(0,1-Math.abs(x-[28,62,33][rowWave])/28);
+      }else if(radius>109&&radius<130){
+        const outer=radius>121;
+        start=111.33+arc*1.06+(outer?0:.17);
+        width=outer?2.00:1.38;
+        if(!outer)notch=2.8*Math.max(0,1-Math.abs(arc-.35)/.13);
+      }else if(x<30&&y<-64){
+        start=111.43+clamp((y+113)/47)*.42+x*.006;
+        width=2.5; notch=2.4*clamp(1-Math.abs(y+82)/11);
+      }else{
+        start=112.04+clamp((y+65)/135)*.72+Math.min(x,120)*.001;
+        width=1.55;
+        const tail=clamp(1-Math.abs(y-46)/15)*clamp(1-Math.abs(x-34)/30);
+        const dorsal=clamp(1-Math.abs(y+46)/15)*clamp(1-Math.abs(x-63)/22);
+        notch=2.8*Math.max(tail,dorsal);
+      }
+      const coverage=clamp((width+notch)*scale+.5-dist[i])*(1-red[a]/255);
+      if(coverage<=0)continue;
+      pixel.push(a);const firstKerf=dist[i]/(width*scale);
+      const widening=notch>0?clamp((dist[i]/scale-width)/notch):0;
+      arrival.push(Math.min(112.985,start+.045*Math.min(1,firstKerf)+.24*widening));opacity.push(255*coverage);
+    }
+    const canvas=mk(w,h),ctx=canvas.getContext('2d'),rgba=ctx.createImageData(w,h);
+    return {canvas,ctx,rgba,pixel:Uint32Array.from(pixel),arrival:Float32Array.from(arrival),opacity:Uint8Array.from(opacity),time:-Infinity};
+  }
+  function showFoldedCuts9(c,map,t){
+    if(t<111.33)return;
+    const time=Math.min(t,113.13);
+    if(time!==map.time){
+      const bytes=map.rgba.data;
+      for(let n=0;n<map.pixel.length;n++){
+        const age=clamp((time-map.arrival[n])/.110);
+        bytes[map.pixel[n]]=map.opacity[n]*age*age*(3-2*age);
+      }
+      map.ctx.putImageData(map.rgba,0,0);map.time=time;
+    }
+    c.drawImage(map.canvas,S9X,S9Y-150,130,300);
+  }
+function makeCuttingPlan9(p){
+  const e=edges(p,PROF_CUT);
+  const plan={pose:p,contour:e.top.concat(e.bot.slice().reverse()),windows:[]};
+  // Tip-contact cuts keep their measured timing. Secondary cut marks open in
+  // neighboring groups along the fish as the scissors play the original rhythm.
+  const cuts=cutList9(p);
+  for(const q of cuts){
+    let nearest=Infinity, touch=0;
+    for(let step=0;step<=120;step++){
+      const t=lerp(T9DET[0],T9DET[1],step/120), tool=shearsPose9(plan,t);
+      const distance=Math.hypot(tool.x-q.c[0],tool.y-q.c[1]);
+      if(distance<nearest){nearest=distance;touch=t;}
+    }
+    const contact=nearest < Math.max(4.5,(q.r||0)+2.0);
+    // Pair the three scale rows and fan the tail slots across the tip.
+    const cross=(q.c[0]-S9X)/90;
+    const echo=112.04+.76*q.u+.105*cross;
+    plan.windows.push({q,touch:contact?touch:echo,duration:contact?.085:.195});
+  }
+  return plan;
+}
+function shearsPose9(plan,t) {
+  const p=plan.pose, points=plan.contour;
+  const u=clamp((t-T9CUT[0])/(T9CUT[1]-T9CUT[0]));
+  const count=Math.max(1, Math.floor(points.length*u));
+  const tip=points[count-1], behind=points[Math.max(0,count-7)];
+  let [x,y]=tip;
+  let angle=count>1 ? Math.atan2(y-behind[1],x-behind[0])
+                    : Math.atan2(points[3][1]-y,points[3][0]-x);
+  if(t>T9CUT[1]){
+    const along=clamp(lerp(.03,1.04,clamp((t-T9DET[0])/(T9DET[1]-T9DET[0]))));
+    const spine=spineAt(p,along);
+    const side=Math.sin((t-T9DET[0])*19)*.07*p.L*(along<.8?1:.4);
+    const next=spineAt(p,Math.min(1,along+.06)), prev=spineAt(p,Math.max(0,along-.06));
+    const heading=Math.atan2(next.y-prev.y,next.x-prev.x);
+    const mix=smooth(T9CUT[1],T9DET[0]+.08,t);
+    x=lerp(x,spine.x+spine.nx*side,mix);
+    y=lerp(y,spine.y+spine.ny*side,mix);
+    angle+=Math.atan2(Math.sin(heading-angle), Math.cos(heading-angle))*mix;
+  }
+  const entering=1-smooth(T9CUT[0]-.30,T9CUT[0],t);
+  const exiting=smooth(T9DET[1],T9DET[1]+.32,t);
+  x+=18*entering+26*exiting;
+  y-=22*entering+30*exiting;
+  const beat=(((t-T9CUT[0]-.05)/.1)%1+1)%1;
+  const cutting=(u>0&&u<1)||(t>=T9DET[0]&&t<T9DET[1]);
+  const open=cutting ? .46*Math.pow(Math.sin(Math.PI*beat),.7) : .34;
+  const alpha=smooth(T9CUT[0]-.3,T9CUT[0]-.05,t)*(1-smooth(T9DET[1]+.02,T9DET[1]+.32,t));
+  return {x,y,angle,open,alpha,count};
+}
+function showPaperCut9(c,plan,count){
+  if(count<2)return;
+  const path=plan.contour;
+  c.beginPath();c.moveTo(...path[0]);
+  for(let i=1;i<count;i++)c.lineTo(...path[i]);
+  c.stroke();
+}
+function drawPaper9(t,cam,TR){
+  const z=cam.z,drop=smooth(T9DROP[0],T9DROP[1],t),open=smooth(T9OPEN[0],T9OPEN[1],t),lifted=t>=T9LIFT;
+  if(!POSE9){POSE9=fishPose(HERO,T9LIFT-0.05);cuttingPlan9=makeCuttingPlan9(POSE9);}
+  const tool=shearsPose9(cuttingPlan9,t);
+  const half=(c,withFish,punched=drop>.02||open>0)=>{c.save();c.beginPath();c.rect(S9X,S9Y-400,400,800);c.clip();c.fillStyle=RED9;frameHalf(c);
+    for(const [u,skew,reach] of [[.30,-.11,.74],[.71,.15,.83]]){
+      const sides=[bodyAt(POSE9,PROF_CUT,u,-.90),bodyAt(POSE9,PROF_CUT,u,.90)];
+      const dist=q=>Math.hypot(q[0]-S9X,q[1]-S9Y);
+      const q=dist(sides[0])>dist(sides[1])?sides[0]:sides[1];
+      const a=Math.atan2(q[1]-S9Y,q[0]-S9X)+skew;
+      const x0=S9X+118*Math.cos(a),y0=S9Y+118*Math.sin(a);
+      const p0=[lerp(x0,q[0],.46)-3,lerp(y0,q[1],.46)-4];
+      const left=withFish?1:lerp(1,reach,smooth(T9LIFT,T9LIFT+(u>.5?.15:.07),t));
+      const stop=[lerp(x0,q[0],left),lerp(y0,q[1],left)];
+      c.beginPath();c.moveTo(x0,y0);c.quadraticCurveTo(...p0,...stop);c.strokeStyle=RED9;c.lineWidth=2.7;c.stroke();
+    }
+    if(withFish){paperSil(c,POSE9);if(punched)paperCuts(c,POSE9);c.globalCompositeOperation='source-over';}c.restore();};
   layerBegin(c9,TR);
-  // 折着的纸：先是一整张，剪完以后余纸落下
-  if(drop<1){c9.save();c9.globalAlpha=1-drop;c9.translate(0,drop*drop*60);c9.fillStyle=RED9;c9.beginPath();c9.rect(S9X,S9Y-150,130,300);c9.fill();
-    c9.globalCompositeOperation='destination-out';c9.translate(0,-drop*drop*60);c9.globalAlpha=1;half(c9,true);c9.restore();}
-  half(c9,!lifted);
-  // 细剪：纸还折着，刀口一个个打穿
-  if(det&&drop<=0.02)paperCuts(c9,POSE9,US9(t));
+  // Leave the folded stock on the cloth. The camera can move over a stationary sheet.
+  if(t<T9CUT[0]-.30){
+    c9.save();c9.globalAlpha=1-drop;c9.translate(0,drop*drop*60);c9.fillStyle=RED9;c9.beginPath();c9.rect(S9X,S9Y-150,130,300);c9.fill();
+    c9.globalCompositeOperation='destination-out';c9.globalAlpha=1;half(c9,true);c9.restore();
+    half(c9,true);
+  }else if(drop<1){
+    if(!paperWaste9){
+      // Cut the stationary, perforated stencil out of a solid red offcut once.
+      const scale=4;
+      paperStencil9=mk(130*scale,300*scale);
+      const stencil=paperStencil9;
+      const st=stencil.getContext('2d');
+      st.setTransform(scale,0,0,scale,-S9X*scale,(150-S9Y)*scale);
+      half(st,true,true);
+      foldedCuts9=prepareFoldedCuts9(stencil,POSE9,scale);
+      paperWaste9=mk(stencil.width,stencil.height);
+      const waste=paperWaste9.getContext('2d');
+      waste.fillStyle=RED9;waste.fillRect(0,0,stencil.width,stencil.height);
+      waste.globalCompositeOperation='destination-out';waste.drawImage(stencil,0,0);
+    }
+    c9.save();c9.globalAlpha=1-drop;c9.translate(0,drop*drop*60);
+    if(drop===0){c9.fillStyle=RED9;c9.fillRect(S9X,S9Y-150,130,300);}
+    else c9.drawImage(paperWaste9,S9X,S9Y-150,130,300);
+    c9.globalCompositeOperation='destination-out';c9.globalAlpha=1;
+    c9.lineJoin='round';c9.lineCap='round';c9.lineWidth=2.15;
+    showPaperCut9(c9,cuttingPlan9,tool.count);
+    revealPaperWindows9(c9,cuttingPlan9,t);
+    showFoldedCuts9(c9,foldedCuts9,t);
+    c9.restore();
+    if(drop>0){
+      // Composite the perforated object as an image. Drawing its destination-out
+      // holes directly onto the waste layer would punch through both at once.
+      c9.drawImage(paperStencil9,S9X,S9Y-150,130,300);
+      if(drop<.24){
+        c9.save();c9.globalCompositeOperation='destination-out';
+        c9.globalAlpha=1-smooth(0,.24,drop);c9.lineJoin='round';c9.lineCap='round';c9.lineWidth=2.15;
+        showPaperCut9(c9,cuttingPlan9,tool.count);c9.restore();
+      }
+    }
+  }else{half(c9,!lifted,true);}
   // 展开的另一半：绕折线翻过来；翻平以后轻轻弹一下才服帖
   const dq=t-T9OPEN[1],wob=dq>0?0.06*Math.exp(-5.5*dq)*Math.abs(Math.sin(9*dq)):0;
   if(open>0){const sx=Math.cos(Math.PI*(1-open))-wob;c9.save();c9.translate(S9X,0);c9.scale(sx,1);c9.translate(-S9X,0);c9.save();c9.translate(2*S9X,0);c9.scale(-1,1);half(c9,true);c9.restore();c9.restore();}
   c9.setTransform(...TR);c9.globalCompositeOperation='source-atop';c9.globalAlpha=0.6;const pt=c9.createPattern(PAPERTEX,'repeat');c9.fillStyle=pt;c9.fillRect(S9X-200,-200,400,400);c9.globalAlpha=1;
   if(open>0&&(open<1||wob>0.002)){const sx=Math.cos(Math.PI*(1-open))-wob;c9.fillStyle=`rgba(40,0,0,${0.35*(1-Math.abs(sx))})`;c9.fillRect(S9X-130*Math.max(0,sx),-160,130*Math.abs(sx),320);}
   c9.globalCompositeOperation='source-over';
-  // 剪刀走过的线：沿鱼的轮廓
-  if(cut>0&&drop<1){const e=edges(POSE9,PROF_CUT);const pts=e.top.concat(e.bot.slice().reverse());const n=Math.floor(pts.length*cut);const trace=()=>{c9.beginPath();for(let i=0;i<n;i++)i?c9.lineTo(pts[i][0],pts[i][1]):c9.moveTo(pts[i][0],pts[i][1]);c9.stroke();};c9.lineJoin='round';
-    c9.save();c9.translate(0.5,0.7);c9.strokeStyle=`rgba(70,0,0,${0.55*(1-drop)})`;c9.lineWidth=1.8;trace();c9.restore();c9.strokeStyle=`rgba(255,238,224,${0.92*(1-drop)})`;c9.lineWidth=1.4;trace();
-    if(n>0&&cut<1){const q=pts[n-1];c9.fillStyle='rgba(255,250,240,0.95)';c9.beginPath();c9.arc(q[0],q[1],2.2,0,7);c9.fill();}}
   ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=0.35;ctx.filter=`brightness(0) blur(${(2.5*z).toFixed(1)}px)`;ctx.drawImage(C9,-2*z,4*z);ctx.restore();
+  if(open>0&&open<1){
+    const angle=Math.PI*(1-open),tilt=Math.sin(angle),ax=Math.cos(angle);
+    layerBegin(foldCtx9,TR);foldCtx9.translate(S9X,0);
+    foldCtx9.transform(-ax-.34*tilt,.24*tilt,0,1,0,0);foldCtx9.translate(-S9X,0);half(foldCtx9,true);
+    blitLayer(foldCast9,.27*tilt,'source-over','brightness(0) blur('+((2+5*tilt)*z).toFixed(1)+'px)');
+  }
   blitLayer(C9,1);
-  // 细剪掉下来的碎纸屑：每剪出一个月牙，就有一小片往下掉、转着、淡掉
-  if(det&&t<T9DET[1]+0.7){const span=T9DET[1]-T9DET[0];ctx.save();ctx.setTransform(...TR);
-    cutList9(POSE9).forEach((q,i)=>{if(q.k==='slit'&&i%2)return;const d=t-(T9DET[0]+(q.u-0.03)/1.01*span)-0.03;if(d<=0||d>0.62)return;const h=((i*37)%17)/17-0.5,r=(q.r||5)*0.8;
-      ctx.save();ctx.translate(q.c[0]+h*26*d,q.c[1]+10*d+150*d*d);ctx.rotate((q.ang||0)+h*9*d);ctx.globalAlpha=1-smooth(0.34,0.62,d);
-      ctx.fillStyle='rgba(60,0,0,0.25)';ctx.beginPath();ctx.ellipse(0.6,1.2,r,r*0.42,0,0,7);ctx.fill();ctx.fillStyle=h>0?'rgb(206,44,44)':'rgb(176,24,30)';ctx.beginPath();ctx.ellipse(0,0,r,r*0.42*Math.abs(Math.cos(d*11+i)),0,0,7);ctx.fill();ctx.restore();});
-    ctx.restore();}
-  // 剪刀：先沿轮廓走一圈（刀尖跟着剪痕），再从鱼头扫到鱼尾细剪；每“咔”一声合一次
-  const sa=smooth(T9CUT[0]-0.3,T9CUT[0]-0.05,t)*(1-smooth(T9DET[1]+0.02,T9DET[1]+0.32,t));
-  if(sa>0.003){const e=edges(POSE9,PROF_CUT);const pts=e.top.concat(e.bot.slice().reverse());const n=Math.max(1,Math.floor(pts.length*cut));const q=pts[n-1],q0=pts[Math.max(0,n-7)];
-    let x=q[0],y=q[1],ang=n>1?Math.atan2(q[1]-q0[1],q[0]-q0[0]):Math.atan2(pts[3][1]-pts[0][1],pts[3][0]-pts[0][0]);
-    if(t>T9CUT[1]){// 细剪：刀尖沿脊线从头到尾，左右来回够着两边的鳞
-      const us=clamp(US9(t)),sp=spineAt(POSE9,us),side=Math.sin((t-T9DET[0])*19)*0.07*POSE9.L*(us<0.8?1:0.4);const k=smooth(T9CUT[1],T9DET[0]+0.08,t);
-      const sp2=spineAt(POSE9,Math.min(1,us+0.06)),sp1=spineAt(POSE9,Math.max(0,us-0.06));const a2=Math.atan2(sp2.y-sp1.y,sp2.x-sp1.x);x=lerp(x,sp.x+sp.nx*side,k);y=lerp(y,sp.y+sp.ny*side,k);ang=ang+Math.atan2(Math.sin(a2-ang),Math.cos(a2-ang))*k;}
-    const away=smooth(T9DET[1],T9DET[1]+0.32,t),pre=1-smooth(T9CUT[0]-0.3,T9CUT[0],t);
-    const ph=(((t-T9CUT[0]-0.05)/0.1)%1+1)%1,busy=(cut>0&&cut<1)||(t>=T9DET[0]&&t<T9DET[1]),op=busy?0.46*Math.pow(Math.sin(Math.PI*ph),0.7):0.34;
-    layerBegin(c9,TR);scissors9(c9,x+26*away+18*pre,y-30*away-22*pre,ang,op);
-    ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=0.32*sa;ctx.filter=`brightness(0) blur(${(3*z).toFixed(1)}px)`;ctx.drawImage(C9,5*z,10*z);ctx.restore();blitLayer(C9,sa);}}
+  if(tool.alpha>.003){
+    layerBegin(c9,TR);scissors9(c9,tool.x,tool.y,tool.angle,tool.open);
+    ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=.32*tool.alpha;
+    ctx.filter='brightness(0) blur('+(3*z).toFixed(1)+'px)';
+    ctx.drawImage(C9,5*z,10*z);ctx.restore();blitLayer(C9,tool.alpha);
+  }
+}
 // 一把老式铁剪刀（张小泉式的大圆把手），刀尖在 (x,y)，沿 ang 方向
 function scissors9(c,x,y,ang,open){c.save();c.translate(x,y);c.rotate(ang);c.translate(-21,0);c.lineCap='round';c.lineJoin='round';
   for(const sg of [1,-1]){c.save();c.rotate(sg*open/2);

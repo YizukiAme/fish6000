@@ -14,10 +14,63 @@ WINKS.push(T6+V3.T_WINK);
 // 青花瓷的小鱼：白釉的身子、钴蓝的画，浮在墙面上，带影子
 const PORC=mk(W,H),pcx2=PORC.getContext('2d');
 // 白釉的外形：和 drawYuan 画的鳍一一对上（硬棘背鳍、后背鳍、臀鳍、腹鳍），蓝彩才不会画到釉外面去，釉上也不会空出一块白
-function yuanSil(c,p,fill='#fff'){const pr=PROF.yuan,L=p.L;c.fillStyle=fill;bodyFill(c,edges(p,pr));c.fill();tailYuanPath(c,p);c.fill();
-  const B=[],T=[];for(let j=0;j<=11;j++){const v=j/11,u=lerp(0.19,0.47,v);const b=bodyAt(p,pr,u,0.92);const s=spineAt(p,u);const h=0.125*L*(0.55+0.45*Math.sin(Math.PI*(0.12+0.85*v)))*(1-0.2*v);B.push(b);T.push([b[0]+s.nx*h-s.tx*h*0.3,b[1]+s.ny*h-s.ty*h*0.3]);}
-  c.beginPath();B.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));for(let i=T.length-1;i>=0;i--)c.lineTo(T[i][0],T[i][1]);c.closePath();c.fill();
-  for(const f of [finPts(p,pr,0.49,0.70,0.09,1,1),finPts(p,pr,0.58,0.72,0.075,-1,1.2),finPts(p,pr,0.31,0.39,0.065,-1,1.7)]){finPath(c,f);c.fill();}}
+function yuanSil(c,p,fill='#fff'){yuanBrushFish(c,p,[0,0,0],1,fill);}
+function floatingCobalt(c,p) {
+  const scale=650;
+  if(!floatingCobalt.cache){
+    const n=512,values=new Int8Array(n*n),seed=rng(293);
+    const broad=noise2(805,40,40),mid=noise2(812,40,40),fine=noise2(867,93,93);
+    const darkPool=noise2(854,68,68);
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+      const a=broad(x/51,y/35),b=mid(x/18.3,y/15.2),d=fine(x/5.7,y/5.9),sp=darkPool(x/8.8,y/7.9);
+      const v=(a-.5)*37+(b-.5)*29+(d-.5)*17+(seed()-.5)*14-21*smooth(.75,.89,sp);
+      values[(y<<9)+x]=Math.round(v);
+    }
+    const plate=document.createElement('canvas'),g=plate.getContext('2d',{willReadFrequently:true});
+    floatingCobalt.cache={values,plate,g};
+  }
+  const {values,plate,g}=floatingCobalt.cache,L=p.L,k=scale/L,head=spineAt(p,0);
+  const bx=-head.tx,by=-head.ty,dx=-head.nx,dy=-head.ny;
+  let minX=0,maxX=0,minY=0,maxY=0;
+  for(const q of p.sp){
+    const x=(q.x-head.x)*k,y=(q.y-head.y)*k;
+    const across=bx*x+by*y,below=dx*x+dy*y;
+    minX=Math.min(minX,across);maxX=Math.max(maxX,across);minY=Math.min(minY,below);maxY=Math.max(maxY,below);
+  }
+  minX=Math.floor(minX-18);maxX=Math.ceil(maxX+18);
+  minY=Math.floor(minY-.26*scale);maxY=Math.ceil(maxY+.23*scale);
+  const w=maxX-minX,h=maxY-minY;
+  if(plate.width!==w)plate.width=w;
+  if(plate.height!==h)plate.height=h;
+  g.reset();g.setTransform(bx*k,dx*k,by*k,dy*k,-(head.x*bx+head.y*by)*k-minX,-(head.x*dx+head.y*dy)*k-minY);
+  drawYuan(g,p,[0,0,0],1,0);
+  const image=g.getImageData(0,0,w,h),d=image.data;
+  // Strong washes acquire a deep indigo core. Light press marks stay transparent
+  // enough to show the clear glaze beneath, and the pores sit within the cobalt.
+  for(let y=0,idx=0;y<h;y++){
+    const row=((y+minY+229)&511)<<9;
+    for(let x=0;x<w;x++,idx+=4){
+      const aa=d[idx+3];if(aa===0)continue;
+      const a=aa/255,grain=values[row+((x+minX+41)&511)],k=.35+.65*a;
+      d[idx]=83-37*a+grain*k;
+      d[idx+1]=104-42*a+grain*k;
+      d[idx+2]=145-31*a+grain*k*.95;
+      d[idx+3]=Math.round(aa*(.87+.105*a));
+    }
+  }
+  g.putImageData(image,0,0);
+  c.save();c.transform(bx/k,by/k,dx/k,dy/k,head.x+(bx*minX+dx*minY)/k,head.y+(by*minX+dy*minY)/k);
+  c.drawImage(plate,0,0);c.restore();
+
+  function xy(u,v){const q=spineAt(p,u);return[q.x-q.nx*v*L,q.y-q.ny*v*L];}
+  const eye=xy(.121,-.050);
+  c.beginPath();c.ellipse(eye[0]-.0008*L,eye[1]+.0016*L,.0094*L,.0091*L,0,0,Math.PI*2);
+  c.fillStyle='rgba(23,32,63,.94)';c.fill();
+  // A short broken specular sits on a dark wash. The original broad, solid white
+  // bar erased the liquid character of the upper strokes during the lift.
+  const dest=(uv)=>uv.map(q=>xy(q[0],q[1]));
+  ribbon(c,curvePts(dest([[.26,-.127],[.3,-.129],[.335,-.126],[.368,-.12]]),19),t=>L*.0038*Math.pow(Math.sin(Math.PI*t),.7),'rgba(217,227,232,.21)',41);
+}
 function porcelainFish(t,cam,TR,p,h,clip,al=1){const z=cam.z;
   layerBegin(pcx2,TR);if(clip){pcx2.beginPath();pcx2.rect(...clip);pcx2.clip();}yuanSil(pcx2,p);
   ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=0.42*h*al;ctx.filter=`brightness(0) blur(${((2+5*h)*z).toFixed(1)}px)`;ctx.drawImage(PORC,-7*h*z,12*h*z);ctx.restore();
@@ -25,9 +78,10 @@ function porcelainFish(t,cam,TR,p,h,clip,al=1){const z=cam.z;
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const q of p.sp){x0=Math.min(x0,q.x);y0=Math.min(y0,q.y);x1=Math.max(x1,q.x);y1=Math.max(y1,q.y);}
   hctx.save();yuanSil(hctx,p);hctx.restore();
   hctx.globalCompositeOperation='source-in';const g=hctx.createLinearGradient(x0,y1,x1,y0);g.addColorStop(0,'#c9cfd2');g.addColorStop(0.5,'#eef0ee');g.addColorStop(1,'#fbfcfa');hctx.fillStyle=g;hctx.fillRect(x0-100,y0-100,x1-x0+200,y1-y0+200);
-  hctx.globalCompositeOperation='source-atop';drawYuan(hctx,p,V3.BLUE,1,0.7*z);
-  hctx.lineCap='round';hctx.lineJoin='round';hctx.strokeStyle='#fff';for(const [w,a] of [[0.034,0.13*h],[0.013,0.42*h]]){hctx.globalAlpha=a;hctx.lineWidth=p.L*w;hctx.beginPath();for(let i=0;i<=12;i++){const q=bodyAt(p,PROF.yuan,lerp(0.2,0.5,i/12),0.74);i?hctx.lineTo(q[0],q[1]):hctx.moveTo(q[0],q[1]);}hctx.stroke();}hctx.globalAlpha=1;
-  hctx.globalCompositeOperation='source-over';blitLayer(HEROC,al);}
+  hctx.globalCompositeOperation='source-atop';floatingCobalt(hctx,p);
+  hctx.globalCompositeOperation='source-over';
+
+    blitLayer(HEROC,al);}
 function drawHero67(t,cam,TR,p){const tv=t-T6;if(tv<V3.T_LEAVE){ctx.setTransform(...trV(cam));V3.drawHeroOutside(tv,camV(cam),trV(cam));return;}
   ctx.setTransform(...TR);porcelainFish(t,cam,TR,p,smooth(T7L,T7L+0.5,t),null,smooth(T7L-0.02,T7L+0.24,t));}
 function styleSong(t,cam,TR,p,clip){const e=cam.e.s6||0;const w=lerp(600,1066.67,e);const px0=S6X-w/2;

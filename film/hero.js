@@ -13,4 +13,4 @@ function drawHeroWall(t,cam,TR,p){let mn=1e9,mx=-1e9;for(const q of p.sp){mn=Mat
   let best=null;for(const s of STN){if(!s.style||mx<s.x0||mn>s.x1)continue;if(!best||s.x0<best.x0)best=s;}
   if(best)best.style(t,cam,TR,p,null);}
 
-function heroPoseNow(t){let k=0;for(const f of HSTIFF)k=Math.max(k,f(t));const p=stiffenPose(fishPose(HERO,t),k);let ox=0,oy=0;for(const f of HOFF){const o=f(t);ox+=o[0];oy+=o[1];}if(ox||oy)for(const q of p.sp){q.x+=ox;q.y+=oy;}return p;}
+function heroPoseNow(t){let k=0;for(const f of HSTIFF)k=Math.max(k,f(t));const trackPose=stiffenPose(fishPose(HERO,t),k);const p=t>44.91&&t<48.58?bronzeDeparturePose(t,trackPose):trackPose;let ox=0,oy=0;for(const f of HOFF){const o=f(t);ox+=o[0];oy+=o[1];}if(ox||oy)for(const q of p.sp){q.x+=ox;q.y+=oy;}return p;}

@@ -5,7 +5,11 @@ const MS3=3;
 const INK3=[30,28,27];
 // 拓片的墨色：扑墨的斑驳 + 纸纹
 const RUBTEX=(()=>{const w=RUBW*MS3,h=RUBH*MS3;const c=mk(w,h);const x=c.getContext('2d');const img=x.createImageData(w,h);const d=img.data;const n1=noise2(331,12,8),n2=noise2(332,60,40),n3=noise2(333,300,200);const r=rng(334);
-  for(let y=0;y<h;y++)for(let xx=0;xx<w;xx++){const u=xx/w,v=y/h;let a=0.06+0.3*clamp((n1(u*12,v*8)-0.42)*1.6)+0.18*clamp((n2(u*60,v*40)-0.5)*2)+(n3(u*300,v*200)-0.5)*0.25;if(r()<0.04)a+=0.35*r();d[(y*w+xx)*4+3]=255*clamp(a);}
+  for(let y=0;y<h;y++)for(let xx=0;xx<w;xx++){const u=xx/w,v=y/h;
+    const inkBed=n1(u*12,v*8), fissure=n2(u*60,v*40), tooth=n3(u*300,v*200);
+    const voids=smooth(0.67,0.86,0.4*fissure+0.6*n2(u*132,v*94)+0.22*(inkBed-0.5)+0.55*(tooth-0.5));
+    let a=0.044+0.13*inkBed+0.50*voids+(tooth-0.5)*0.15;
+    if(r()<0.032)a+=0.27*r();d[(y*w+xx)*4+3]=255*clamp(a);}
   x.putImageData(img,0,0);return c;})();
 // 背景：剔地留下的竖向凿痕
 const RUBBG=(()=>{const w=RUBW*MS3,h=RUBH*MS3;const c=mk(w,h);const x=c.getContext('2d');const img=x.createImageData(w,h);const d=img.data;const n1=noise2(341,30,6),n2=noise2(342,600,10),n3=noise2(343,8,6);const r=rng(345);
@@ -24,7 +28,21 @@ function drawHanFish(c,p){const pr=PROF_HAN,L=p.L;const e=edges(p,pr);c.save();c
   c.globalCompositeOperation='destination-out';const k=L/140;
   const ey=bodyAt(p,pr,0.08,0.3);c.lineWidth=1.3*k;c.beginPath();c.arc(ey[0],ey[1],0.026*L,0,7);c.stroke();
   const g0=bodyAt(p,pr,0.2,0.85),g1=bodyAt(p,pr,0.235,0),g2=bodyAt(p,pr,0.2,-0.8);c.lineWidth=1.5*k;c.beginPath();c.moveTo(g0[0],g0[1]);c.quadraticCurveTo(g1[0],g1[1],g2[0],g2[1]);c.stroke();
-  c.lineWidth=1.1*k;for(const v of [0.45,-0.05,-0.55])for(let u=0.3;u<0.74;u+=0.075){const q=bodyAt(p,pr,u+(v===-0.05?0.035:0),v);const s=spineAt(p,u);const ang=Math.atan2(-s.ty,-s.tx);c.beginPath();c.arc(q[0],q[1],0.028*L,ang-1.2,ang+1.2);c.stroke();}
+
+  // Tapered cuts are wider at the shoulders and shorter over the receding flank.
+  const cut=(u,v,du,dv)=>{
+    const q=(a,b)=>bodyAt(p,pr,a,b);
+    c.beginPath();c.moveTo(...q(u-du*0.72,v+dv));
+    c.quadraticCurveTo(...q(u+du*0.15,v+dv*0.70),...q(u+du*0.40,v+dv*0.09));
+    c.quadraticCurveTo(...q(u+du*0.23,v-dv*0.58),...q(u-du*0.64,v-dv));
+    c.quadraticCurveTo(...q(u+du*1.08,v-dv*0.67),...q(u+du*1.15,v+dv*0.05));
+    c.quadraticCurveTo(...q(u+du*0.73,v+dv*0.68),...q(u-du*0.72,v+dv));c.fill();
+  };
+  for(let j=0;j<4;j++){
+    const u=0.32+j*0.107;
+    cut(u,0.34-j*0.025,0.032-j*0.0015,0.39-j*0.025);
+    cut(u+0.044,-0.28,0.028-j*0.0015,0.34-j*0.025);
+  }
   c.lineWidth=0.9*k;const tb2=spineAt(p,0.86);for(let j=-2;j<=2;j++){const q=Pp(0.985,j*0.07);c.beginPath();c.moveTo(tb2.x,tb2.y);c.lineTo(lerp(tb2.x,q[0],0.85),lerp(tb2.y,q[1],0.85));c.stroke();}
   const m0=bodyAt(p,pr,0.0,0.05),m1=bodyAt(p,pr,0.06,-0.2);c.lineWidth=1.2*k;c.beginPath();c.moveTo(m0[0],m0[1]);c.lineTo(m1[0],m1[1]);c.stroke();
   c.restore();}
@@ -91,7 +109,22 @@ function hanStatic(c,t){c.fillStyle='#000';c.strokeStyle='#000';c.lineCap='round
   c.lineWidth=1.4;c.beginPath();c.moveTo(-256,-128);c.lineTo(256,-128);c.stroke();
   c.save();c.beginPath();c.rect(-254,-126,508,275);c.clip();
   // 水：几道起伏的阳线，一直在流
-  c.lineWidth=2.6;for(const [y0,a,ph] of [[22,3,0.3],[62,3.5,1.7],[104,3,3.1],[140,2.6,4.4]]){rubPath(c,wave3(y0,a,ph+1.15*t,-250,250));c.stroke();}
+
+  // Short raised bands suggest the surface beside the boat and leave the catch legible.
+  for(const [y,amp,phase,left,right,width] of [
+    [22,2.9,0.3,-250,-144,2.5],[22,3,0.3,-8,47,1.5],[22,2.4,0.3,93,249,2.4],
+    [63,2.4,1.7,-244,-173,1.45],[68,3.1,1.3,-94,23,1.95],[71,1.8,2.9,165,236,1.65],
+    [107,2.8,2.1,-224,-77,2.25],[104,3.3,3.1,19,128,1.85],
+    [134,1.8,4.4,-166,-103,1.5],[137,2.4,3.3,104,241,2.15]
+  ]){
+    const pts=wave3(y,amp,phase+1.15*t,left,right);
+    c.beginPath();c.moveTo(...pts[0]);
+    for(const [x,py] of pts)c.lineTo(x,py);
+    for(let i=pts.length-1;i>=0;i--){const [x,py]=pts[i],u=i/(pts.length-1);
+      const edge=Math.min(1,u*8,(1-u)*5);
+      c.lineTo(x,py+width*edge*(1.0+0.16*Math.sin(x*0.087+phase)));}
+    c.closePath();c.fill();
+  }
   // 天上两只雁：往左飞，翅膀一扇一扇
   for(const [bx0,by,s,k] of [[214,-96,1,0],[262,-80,0.8,1.7]]){const bx=bx0-15*(t-31);const f=Math.sin(7.2*t+k);c.save();c.translate(bx,by+1.5*Math.sin(3.6*t+k));c.scale(s,s);
     c.beginPath();c.moveTo(-22,2+7*f);c.quadraticCurveTo(-8,-14-8*f,0,-2);c.quadraticCurveTo(8,-16-8*f,24,-4+7*f);c.quadraticCurveTo(8,-6,2,4);c.quadraticCurveTo(-6,6,-22,2+7*f);c.fill();c.restore();}
@@ -103,7 +136,7 @@ function hanStatic(c,t){c.fillStyle='#000';c.strokeStyle='#000';c.lineCap='round
    c.save();c.translate(30,8);c.rotate(0.6+0.25*Math.sin(5*t));c.beginPath();c.ellipse(0,0,7,3,0,0,7);c.fill();c.beginPath();c.moveTo(-6,0);c.lineTo(-11,-3);c.lineTo(-11,3);c.closePath();c.fill();c.restore();
    c.restore();c.restore();}
   // 水里的小鱼
-  for(const [fx0,fy,fl,dir,sp] of SMALL3){let fx=fx0-dir*sp*14*(t-31);fx=((fx+245)%490+490)%490-245;const ph=t*2*Math.PI*1.4+fx0;
+  for(const [fx0,fy,fl,dir,sp] of SMALL3){let fx=fx0-dir*sp*14*(t-31);const limit=254+fl*.6+2;fx=((fx+limit)%(2*limit)+2*limit)%(2*limit)-limit;const ph=t*2*Math.PI*1.4+fx0;
     const p=procPose(fx,fy+2*Math.sin(t*0.9+fx0),dir>0?Math.PI:0,fl,0,0.9,ph,t);if(dir<0)for(const q of p.sp){q.nx=-q.nx;q.ny=-q.ny;}drawHanFish(c,p);}
   c.restore();}
 // 渔人：汉画像石里的人是平的剪影，但轮廓是活的——背是一道弧，跪坐着、膝盖朝前，侧脸、戴斗笠；身上几道刻出来的阴线（腰带、膝褶、眼睛）
@@ -113,7 +146,10 @@ function hanFisher(c){c.beginPath();c.moveTo(-24,26);c.bezierCurveTo(-31,8,-27,-
   c.beginPath();c.arc(-2,-41,7.5,0,7);c.fill();c.beginPath();c.moveTo(4,-44);c.lineTo(8.5,-40.5);c.lineTo(4.5,-38.3);c.closePath();c.fill();
   c.beginPath();c.moveTo(-19,-44);c.quadraticCurveTo(-4,-62,15,-45);c.quadraticCurveTo(-2,-49.5,-19,-44);c.closePath();c.fill();
   c.save();c.globalCompositeOperation='destination-out';c.lineWidth=1.3;c.beginPath();c.moveTo(-22,-6);c.quadraticCurveTo(-6,-9,9,-7);c.stroke();
-  c.beginPath();c.moveTo(-16,9);c.quadraticCurveTo(4,4,22,11);c.stroke();
+
+  // Leave a pair of paper cuts for the turned sleeve and the weight on the near knee.
+  c.beginPath();c.moveTo(-17,-22);c.quadraticCurveTo(-14,-17,-8,-13);c.lineTo(-11,-13);c.quadraticCurveTo(-17,-18,-17,-22);c.fill();
+  c.beginPath();c.moveTo(-16,10);c.quadraticCurveTo(-3,4,8,6);c.quadraticCurveTo(15,7,22,12);c.quadraticCurveTo(10,6,2,8);c.quadraticCurveTo(-8,10,-16,10);c.fill();
   c.beginPath();c.arc(1.2,-43,1.1,0,7);c.fill();c.restore();}
 function hanDynamic(c,t){c.fillStyle='#000';c.strokeStyle='#000';c.lineCap='round';c.lineJoin='round';
   const B=boat3(t);const [tx,ty]=NETTIP(t);
